@@ -43,10 +43,14 @@ var digestAlgorithmIdentifiers = map[crypto.Hash]string{
 }
 
 var digestAlgorithmsByIdentifier = map[string]crypto.Hash{}
+var signatureMethodsByIdentifier = map[string]crypto.Hash{}
 
 func init() {
 	for hash, id := range digestAlgorithmIdentifiers {
 		digestAlgorithmsByIdentifier[id] = hash
+	}
+	for hash, id := range signatureMethodIdentifiers {
+		signatureMethodsByIdentifier[id] = hash
 	}
 }
 

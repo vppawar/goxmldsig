@@ -13,7 +13,15 @@ type X509KeyStore interface {
 }
 
 type X509CertificateStore interface {
-	Certificates() (roots, intermediates *x509.CertPool, err error)
+	Certificates() (roots []*x509.Certificate, err error)
+}
+
+type MemoryX509CertificateStore struct {
+	Roots []*x509.Certificate
+}
+
+func (mX509cs *MemoryX509CertificateStore) Certificates() ([]*x509.Certificate, error) {
+	return mX509cs.Roots, nil
 }
 
 type MemoryX509KeyStore struct {

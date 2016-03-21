@@ -1,11 +1,11 @@
 package dsig
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/beevik/etree"
 	"github.com/stretchr/testify/require"
-	"encoding/base64"
 )
 
 const canonicalResponse = `
@@ -26,7 +26,6 @@ DJpRaioUTd2lGh4TLUxAxCxtUk/pascL+3Nn936LFmUCLxaxnbeGzPOXAhscCtU1H0nFsXRnKx5a
 cPXYSKFZZZktieSkww2Oi8dg2DYaQhGQMSFMVqgVfwEu4bvCRBvdSiNXdWGCZQmFVzBZZ/9rOLzP
 pvTFTPnpkavJm81FLlUhiE/oFgKlCDLWDknSpXAI0uZGERcwPca6xvIMh86LjQKjbVci9FYDStXC
 qRnqQ+TccSu/B6uONFsDEngGcXSKfB+a</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature><saml2:Subject><saml2:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">russell.haering@scaleft.com</saml2:NameID><saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml2:SubjectConfirmationData InResponseTo="_8a64888e-0a14-4fb9-905d-65629b84786a" NotOnOrAfter="2016-03-15T00:26:40.409Z" Recipient="http://localhost:8080/v1/_saml_callback"></saml2:SubjectConfirmationData></saml2:SubjectConfirmation></saml2:Subject><saml2:Conditions NotBefore="2016-03-15T00:16:40.409Z" NotOnOrAfter="2016-03-15T00:26:40.409Z"><saml2:AudienceRestriction><saml2:Audience>123</saml2:Audience></saml2:AudienceRestriction></saml2:Conditions><saml2:AuthnStatement AuthnInstant="2016-03-15T00:21:40.409Z" SessionIndex="_8a64888e-0a14-4fb9-905d-65629b84786a"><saml2:AuthnContext><saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml2:AuthnContextClassRef></saml2:AuthnContext></saml2:AuthnStatement></saml2:Assertion></saml2p:Response>`
-
 
 const canonicalResponse2 = `
 <saml2p:Response xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" Destination="http://localhost:8080/v1/_saml_callback" ID="id103532804647787975381325" InResponseTo="_8699c655-c482-451a-9b7f-61668f140b47" IssueInstant="2016-03-16T01:02:57.682Z" Version="2.0"><saml2:Issuer xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://www.okta.com/exk5zt0r12Edi4rD20h7</saml2:Issuer><saml2p:Status><saml2p:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"></saml2p:StatusCode></saml2p:Status><saml2:Assertion xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" ID="id1035328046526588900089424" IssueInstant="2016-03-16T01:02:57.682Z" Version="2.0"><saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://www.okta.com/exk5zt0r12Edi4rD20h7</saml2:Issuer><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod><ds:Reference URI="#id1035328046526588900089424"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>No1VyQlk8Xif4FiJ+haViwEQySIzBa14lGy0coCn0c8=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>VSV8Vw47q7n/XZwaQOPWQeKI5ZA69fnGZyEFhex4xuaIfC+LOYnfd8q8qcZsm1M6kv47H/dR6YXRIMjPKXZeyX/MKcmGPCadqWFT7EWFvzuO/uy/AB/CL5ZCQiY9H/aOhDysO8glse1S+Y2K0CwvsoRwMfFiO2XOYhVOsngUSkCBdLIB6Oq4f+ZsK0rw/E79n9QUd8owDq3dVC18SFYYdcIVDhQppglyuBEZfu2tG06gD9jls7ZE8vjcMfHmhuHtxlH3ovNLB35NFO/VrCNdFqmD76GnEA98foiJxCX8vzNHF4rPUFXAEdiS4OdQAxb7jNNVoKVYuadunLygysZGSg==</ds:SignatureValue><ds:KeyInfo><ds:X509Data><ds:X509Certificate>MIIDpDCCAoygAwIBAgIGAVLIBhAwMA0GCSqGSIb3DQEBBQUAMIGSMQswCQYDVQQGEwJVUzETMBEG
@@ -67,4 +66,3 @@ func TestDigest(t *testing.T) {
 	require.Equal(t, "npTAl6kraksBlCRlunbyD6nICTcfsDaHjPXVxoDPrw0=", base64.StdEncoding.EncodeToString(digest))
 
 }
-
