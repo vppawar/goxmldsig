@@ -29,8 +29,8 @@ func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 }
 
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
-	attrMap := make(map[string]bool)
-	doc := etree.CreateDocument(canonicalHack(el, attrMap))
+
+	doc := etree.CreateDocument(canonicalHack(el))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,

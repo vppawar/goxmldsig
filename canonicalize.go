@@ -47,14 +47,9 @@ func (a attrsByKey) Less(i, j int) bool {
 	return composeAttr(a[i].Space, a[i].Key) < composeAttr(a[j].Space, a[j].Key)
 }
 
-// NOTE(russell_h): It looks like etree's canonical XML support doesn't
-// re-order attributes. This call is an opportunity to do that, and correct
-// any other other shortcomings until I can get the fixes upstream.
-// NOTE(phoebe): Looks like etree also doesn't remove attributes that are
-// duplicate namespaces. They should be removed if a parent has a matching one
-func canonicalHack(el *etree.Element, seenSoFar map[string]bool) *etree.Element {
+func _canonicalHack(el *etree.Element, seenSoFar map[string]bool) *etree.Element {
 	_seenSoFar := make(map[string]bool)
-	for k,v := range seenSoFar {
+	for k, v := range seenSoFar {
 		_seenSoFar[k] = v
 	}
 
@@ -74,13 +69,23 @@ func canonicalHack(el *etree.Element, seenSoFar map[string]bool) *etree.Element 
 		}
 	}
 
-
 	for i, token := range ne.Child {
 		childElement, ok := token.(*etree.Element)
 		if ok {
-			ne.Child[i] = canonicalHack(childElement, _seenSoFar)
+			ne.Child[i] = _canonicalHack(childElement, _seenSoFar)
 		}
 	}
 
 	return ne
+}
+
+// NOTE(russell_h): It looks like etree's canonical XML support doesn't
+// re-order attributes. This call is an opportunity to do that, and correct
+// any other other shortcomings until I can get the fixes upstream.
+// NOTE(phoebe): Looks like etree also doesn't remove attributes that are
+// duplicate namespaces. They should be removed if a parent has a matching one
+func canonicalHack(el *etree.Element) *etree.Element {
+	attrMap := make(map[string]bool)
+	return _canonicalHack(el, attrMap)
+
 }
