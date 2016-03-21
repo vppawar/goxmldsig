@@ -136,7 +136,6 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 	// Any attributes from the 'Signature' element must be pushed down into the 'SignedInfo' element before it is canonicalized
 	for _, attr := range signatureElement.Attr {
 		signedInfo.CreateAttr(attr.Space+":"+attr.Key, attr.Value)
-
 	}
 
 	// Canonicalize the xml
@@ -165,7 +164,7 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 		return errors.New("Invalid public key")
 	}
 
-	// Verify that the hash of the canonicalized xml, when signed by the public key from the cert, matches the decoded 'SignatureValue'
+	// Verify that the private key matching the public key from the cert was what was used to sign the 'SignedInfo' and produce the 'SignatureValue'
 	err = rsa.VerifyPKCS1v15(pubKey, signatureAlgorithm, hashed[:], sig)
 	if err != nil {
 		return err
