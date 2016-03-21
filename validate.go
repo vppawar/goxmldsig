@@ -103,7 +103,10 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 }
 
 func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nAlgorithmId string) ([]byte, error) {
-	doc := etree.CreateDocument(canonicalHack(el))
+	attrMap := make(map[string]bool)
+	hacked := canonicalHack(el, attrMap)
+
+	doc := etree.CreateDocument(hacked)
 	println(c14nAlgorithmId)
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
@@ -181,6 +184,11 @@ func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error
 		return nil, errors.New("Missing DigestMethod")
 	}
 
+	digestValue := reference.FindElement(childPath(sig.Space, DigestValueTag))
+	if digestValue == nil {
+		return nil, errors.New("Missing DigestValue")
+	}
+
 	digestAlgorithmAttr := digestMethod.SelectAttr(AlgorithmAttr)
 	if digestAlgorithmAttr == nil {
 		return nil, errors.New("Missing DigestMethod Algorithm attribute")
@@ -192,6 +200,9 @@ func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error
 	}
 
 	println(base64.StdEncoding.EncodeToString(digest))
+	if digestValue.Text() != base64.StdEncoding.EncodeToString(digest) {
+		return nil, errors.New("Signature could not be verified")
+	}
 
 	doc := etree.CreateDocument(transformed)
 
