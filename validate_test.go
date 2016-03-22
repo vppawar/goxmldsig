@@ -142,7 +142,7 @@ func TestTransform(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotEmpty(t, transformed)
-	require.NotEmpty(t, canonicalFunction)
+	require.Equal(t, "http://www.w3.org/2001/10/xml-exc-c14n#", canonicalFunction)
 
 	document := etree.CreateDocument(transformed)
 
