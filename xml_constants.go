@@ -22,12 +22,16 @@ const (
 	KeyInfoTag                = "KeyInfo"
 	X509DataTag               = "X509Data"
 	X509CertificateTag        = "X509Certificate"
+	AssertionTag              = "Assertion"
+	AttributeStatementTag     = "AttributeStatement"
+	AttributeValueTag         = "AttributeValue"
 )
 
 const (
 	AlgorithmAttr = "Algorithm"
 	URIAttr       = "URI"
 	DefaultIdAttr = "ID"
+	NameAttr      = "Name"
 )
 
 const (

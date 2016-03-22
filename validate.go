@@ -339,3 +339,29 @@ func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error
 
 	return nil, nil
 }
+
+func (ctx *ValidationContext) RetrieveAssertionInfo(el *etree.Element) (map[string]string, error) {
+	el = el.Copy()
+
+	assertionElement := el.FindElement("//" + AssertionTag)
+	if assertionElement == nil {
+		return nil, errors.New("Missing Assertion")
+	}
+
+	attributeStatement := assertionElement.FindElement(childPath(assertionElement.Space, AttributeStatementTag))
+	if attributeStatement == nil {
+		return nil, errors.New("Missing AttributeStatement")
+	}
+
+	info := make(map[string]string)
+	for _, child := range attributeStatement.ChildElements() {
+		nameAttr := child.SelectAttr("Name")
+		attributeValue := child.FindElement(childPath(child.Space, AttributeValueTag))
+		if attributeValue == nil {
+			return nil, errors.New("Missing AttributeValue")
+		}
+		info[nameAttr.Value] = attributeValue.Text()
+	}
+
+	return info, nil
+}
