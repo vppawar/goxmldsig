@@ -178,7 +178,7 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Ce
 
 	// Verify the document minus the signedInfo against the 'DigestValue'
 	// Find the 'Signature' element
-	sig := el.FindElement("//" + SignatureTag)
+	sig := el.FindElement(SignatureTag)
 
 	if sig == nil {
 		return nil, errors.New("Missing Signature")
