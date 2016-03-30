@@ -281,7 +281,7 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Ce
 		return nil, err
 	}
 
-	return nil, nil
+	return referencedElement, nil
 }
 
 func contains(roots []*x509.Certificate, cert *x509.Certificate) bool {
@@ -297,7 +297,48 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 	now := time.Now()
 	el = el.Copy()
 
-	x509Element := el.FindElement("//" + X509CertificateTag)
+	idAttr := el.SelectAttr(DefaultIdAttr)
+	if idAttr == nil || idAttr.Value == "" {
+		return nil, errors.New("Missing ID attribute")
+	}
+
+	signatureElements := el.FindElements("//" + SignatureTag)
+	var signatureElement *etree.Element
+
+	// Find the Signature element that references the whole Response element
+	for _, e := range signatureElements {
+		e2 := e.Copy()
+
+		signedInfo := e2.FindElement(childPath(e2.Space, SignedInfoTag))
+		if signedInfo == nil {
+			return nil, errors.New("Missing SignedInfo")
+		}
+
+		referenceElement := signedInfo.FindElement(childPath(e2.Space, ReferenceTag))
+		if referenceElement == nil {
+			return nil, errors.New("Missing Reference Element")
+		}
+
+		uriAttr := referenceElement.SelectAttr(URIAttr)
+		if uriAttr == nil || uriAttr.Value == "" {
+			return nil, errors.New("Missing URI attribute")
+		}
+
+		if uriAttr.Value[1:] == idAttr.Value {
+			signatureElement = e
+			break
+		}
+	}
+
+	if signatureElement == nil {
+		return nil, errors.New("Missing signature referencing the Response element")
+	}
+
+	// Get the x509 element from the signature
+	x509Element := signatureElement.FindElement("//" + childPath(signatureElement.Space, X509CertificateTag))
+	if x509Element == nil {
+		return nil, errors.New("Missing x509 Element")
+	}
 
 	x509Text := "-----BEGIN CERTIFICATE-----\n" + x509Element.Text() + "\n-----END CERTIFICATE-----"
 	block, _ := pem.Decode([]byte(x509Text))
@@ -315,6 +356,7 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 		return nil, err
 	}
 
+	// Verify that the certificate is one we trust
 	if !contains(roots, cert) {
 		return nil, errors.New("Could not verify certificate against trusted certs")
 	}
@@ -332,10 +374,6 @@ func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.validateSignature(el, cert)
-	if err != nil {
-		return nil, err
-	}
 
-	return nil, nil
+	return ctx.validateSignature(el, cert)
 }
