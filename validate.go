@@ -281,7 +281,7 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Ce
 		return nil, err
 	}
 
-	return referencedElement, nil
+	return transformed, nil
 }
 
 func contains(roots []*x509.Certificate, cert *x509.Certificate) bool {
@@ -331,7 +331,7 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 	}
 
 	if signatureElement == nil {
-		return nil, errors.New("Missing signature referencing the Response element")
+		return nil, errors.New("Missing signature referencing the top-level element")
 	}
 
 	// Get the x509 element from the signature
