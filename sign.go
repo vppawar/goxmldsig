@@ -124,6 +124,11 @@ func (ctx *SigningContext) constructSignature(el *etree.Element, enveloped bool)
 
 	sig.Child = append(sig.Child, signedInfo)
 
+	// Must propagate down the attributes to the 'SignedInfo' before digesting
+	for _, attr := range sig.Attr {
+		signedInfo.CreateAttr(attr.Space+":"+attr.Key, attr.Value)
+	}
+
 	digest, err := ctx.digest(signedInfo)
 	if err != nil {
 		return nil, err
