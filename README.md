@@ -1,5 +1,7 @@
 # goxmldsig
 
+[![GoDoc](https://godoc.org/github.com/russellhaering/goxmldsig?status.svg)](https://godoc.org/github.com/russellhaering/goxmldsig)
+
 XML Digital Signatures implemented in pure Go.
 
 ## Installation
