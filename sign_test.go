@@ -21,7 +21,8 @@ func TestSign(t *testing.T) {
 	id := "_" + uuid.NewV4().String()
 	authnRequest.CreateAttr("ID", id)
 	hash := crypto.SHA256.New()
-	doc := etree.CreateDocument(canonicalHack(authnRequest))
+	doc := etree.NewDocument()
+	doc.SetRoot(canonicalHack(authnRequest))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
