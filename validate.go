@@ -52,14 +52,12 @@ func childPath(space, tag string) string {
 
 // The RemoveElement method on etree.Element isn't recursive...
 func recursivelyRemoveElement(tree, el *etree.Element) bool {
+	if tree.RemoveChild(el) != nil {
+		return true
+	}
+
 	for i, child := range tree.Child {
 		if childElement, ok := child.(*etree.Element); ok {
-			if childElement == el {
-				tree.Child = append(tree.Child[0:i], tree.Child[i+1:]...)
-				childElement.Parent = nil
-				return true
-			}
-
 			if recursivelyRemoveElement(childElement, el) {
 				return true
 			}
@@ -106,7 +104,8 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 }
 
 func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nAlgorithmId string) ([]byte, error) {
-	doc := etree.CreateDocument(canonicalHack(el))
+	doc := etree.NewDocument()
+	doc.SetRoot(canonicalHack(el))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -139,7 +138,8 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 	}
 
 	// Canonicalize the xml
-	doc := etree.CreateDocument(canonicalHack(signedInfo))
+	doc := etree.NewDocument()
+	doc.SetRoot(canonicalHack(signedInfo))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
