@@ -56,7 +56,7 @@ func recursivelyRemoveElement(tree, el *etree.Element) bool {
 		return true
 	}
 
-	for i, child := range tree.Child {
+	for _, child := range tree.Child {
 		if childElement, ok := child.(*etree.Element); ok {
 			if recursivelyRemoveElement(childElement, el) {
 				return true
