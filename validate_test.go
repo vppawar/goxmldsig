@@ -145,7 +145,7 @@ func TestTransform(t *testing.T) {
 	require.Equal(t, "http://www.w3.org/2001/10/xml-exc-c14n#", canonicalFunction)
 
 	doc = etree.NewDocument()
-	doc.SetRoot(canonicalHack(transformed))
+	doc.SetRoot(transformed)
 
 	str, err := doc.WriteToString()
 	require.NoError(t, err)
