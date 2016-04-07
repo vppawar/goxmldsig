@@ -42,7 +42,8 @@ func main() {
     // Serialize the signed element. It is important not to modify the element
     // after it has been signed - even pretty-printing the XML will invalidate
     // the signature.
-    doc := etree.CreateDocument(signedElement)
+    doc := etree.NewDocument()
+    doc.SetRoot(signedElement)
     str, err := doc.WriteToString()
     if err != nil {
         panic(err)
@@ -69,7 +70,8 @@ func validate(root *x509.Certificate, el *etree.Element) {
         panic(err)
     }
 
-    doc := etree.CreateDocument(validated)
+    doc := etree.NewDocument()
+    doc.SetRoot(validated)
     str, err := doc.WriteToString()
     if err != nil {
         panic(err)
