@@ -84,7 +84,6 @@ func _canonicalHack(el *etree.Element, seenSoFar map[string]struct{}) *etree.Ele
 // any other other shortcomings until I can get the fixes upstream.
 // NOTE(phoebe): Looks like etree also doesn't remove attributes that are
 // duplicate namespaces. They should be removed if a parent has a matching one
-// NOTE(astuart): namespaces must also be moved to the first element at which they're used
 func canonicalHack(el *etree.Element) *etree.Element {
 	attrMap := make(map[string]struct{})
 	return _canonicalHack(el, attrMap)
@@ -101,17 +100,20 @@ type c14nSpace struct {
 
 const nsSpace = "xmlns"
 
-func _excCanonicalPrep(el *etree.Element, _alreadyDeclared map[string]c14nSpace) *etree.Element {
-	//Copy alreadyDeclared map
-	alreadyDeclared := make(map[string]c14nSpace, len(_alreadyDeclared))
-	for k := range _alreadyDeclared {
-		alreadyDeclared[k] = _alreadyDeclared[k]
+func _excCanonicalPrep(el *etree.Element, _nsAlreadyDeclared map[string]c14nSpace) *etree.Element {
+	//Copy alreadyDeclared map (only contains namespaces)
+	nsAlreadyDeclared := make(map[string]c14nSpace, len(_nsAlreadyDeclared))
+	for k := range _nsAlreadyDeclared {
+		nsAlreadyDeclared[k] = _nsAlreadyDeclared[k]
 	}
 
-	usedHere := make(map[string]struct{})
+	//Track the namespaces used on the current element
+	nsUsedHere := make(map[string]struct{})
 
+	//Make sure to track the element namespace for the case:
+	//<foo:bar xmlns:foo="..."/>
 	if el.Space != "" {
-		usedHere[el.Space] = struct{}{}
+		nsUsedHere[el.Space] = struct{}{}
 	}
 
 	toRemove := make([]string, 0, 0)
@@ -119,37 +121,48 @@ func _excCanonicalPrep(el *etree.Element, _alreadyDeclared map[string]c14nSpace)
 	for _, a := range el.Attr {
 		switch a.Space {
 		case nsSpace:
+			//For simplicity, remove all xmlns attribues; to be added in one pass
+			//later.  Otherwise, we need another map/set to track xmlns attributes
+			//that we left alone.
 			toRemove = append(toRemove, a.Space+":"+a.Key)
-			if _, ok := alreadyDeclared[a.Key]; !ok {
-				alreadyDeclared[a.Key] = c14nSpace{a: a, used: false}
+			if _, ok := nsAlreadyDeclared[a.Key]; !ok {
+				//If we're not tracking ancestor state already for this namespace, add
+				//it to the map
+				nsAlreadyDeclared[a.Key] = c14nSpace{a: a, used: false}
 			}
 		default:
+			//We only track namespaces, so ignore attributes without one.
 			if a.Space != "" {
-				usedHere[a.Space] = struct{}{}
+				nsUsedHere[a.Space] = struct{}{}
 			}
 		}
 	}
+	//Remove all attributes so that we can add them with much-simpler logic
 	for _, attrK := range toRemove {
 		el.RemoveAttr(attrK)
 	}
 
-	for k := range usedHere {
-		spc := alreadyDeclared[k]
+	//For all namespaces used on the current element, declare them if they were
+	//not declared (and used) in an ancestor.
+	for k := range nsUsedHere {
+		spc := nsAlreadyDeclared[k]
 		//If previously unused, mark as used
 		if !spc.used {
 			el.Attr = append(el.Attr, spc.a)
 			spc.used = true
-			alreadyDeclared[k] = spc
+
+			//Assignment here is only to update the pre-existing `used` tracking value
+			nsAlreadyDeclared[k] = spc
 		}
 	}
 
+	//Canonicalize all children, passing down the ancestor tracking map
 	for _, child := range el.ChildElements() {
-		_excCanonicalPrep(child, alreadyDeclared)
+		_excCanonicalPrep(child, nsAlreadyDeclared)
 	}
 
+	//Sort attributes lexicographically
 	sort.Sort(attrsByKey(el.Attr))
-
-	//Sort
 
 	return el.Copy()
 }
