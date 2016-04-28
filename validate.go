@@ -89,7 +89,7 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 			if !recursivelyRemoveElement(root, sig) {
 				return nil, "", errors.New("Error applying canonicalization transform: Signature not found")
 			}
-		case CanonicalXML10AlgorithmId, CanonicalXML11AlgorithmId:
+		case string(CanonicalXML10AlgorithmId), string(CanonicalXML11AlgorithmId):
 			c14nAlgorithm = algo.Value
 		default:
 			return nil, "", errors.New("Unknown Transform Algorithm: " + algo.Value)

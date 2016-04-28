@@ -30,10 +30,15 @@ const (
 	DefaultIdAttr = "ID"
 )
 
+type SignatureAlgorithm string
+
+//Well-known signature algorithms
 const (
 	// NOTE(russell_h): I guess 1.0 is "exclusive" and 1.1 isn't
-	CanonicalXML10AlgorithmId     = "http://www.w3.org/2001/10/xml-exc-c14n#"
-	CanonicalXML11AlgorithmId     = "http://www.w3.org/2006/12/xml-c14n11"
+	CanonicalXML10AlgorithmId SignatureAlgorithm = "http://www.w3.org/2001/10/xml-exc-c14n#"
+	CanonicalXML11AlgorithmId                    = "http://www.w3.org/2006/12/xml-c14n11"
+)
+const (
 	EnvelopedSignatureAltorithmId = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
 )
 

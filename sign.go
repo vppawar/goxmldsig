@@ -17,6 +17,7 @@ type SigningContext struct {
 	KeyStore    X509KeyStore
 	IdAttribute string
 	Prefix      string
+	Algorithm   SignatureAlgorithm
 }
 
 func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
@@ -25,12 +26,18 @@ func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 		KeyStore:    ks,
 		IdAttribute: DefaultIdAttr,
 		Prefix:      DefaultPrefix,
+		Algorithm:   CanonicalXML11AlgorithmId,
 	}
 }
 
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalHack(el))
+	switch ctx.Algorithm {
+	case CanonicalXML10AlgorithmId:
+		doc.SetRoot(excCanonicalPrep(el))
+	default:
+		doc.SetRoot(canonicalHack(el))
+	}
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -69,7 +76,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 
 	// /SignedInfo/CanonicalizationMethod
 	canonicalizationMethod := ctx.createNamespacedElement(signedInfo, CanonicalizationMethodTag)
-	canonicalizationMethod.CreateAttr(AlgorithmAttr, CanonicalXML11AlgorithmId)
+	canonicalizationMethod.CreateAttr(AlgorithmAttr, string(ctx.Algorithm))
 
 	// /SignedInfo/SignatureMethod
 	signatureMethod := ctx.createNamespacedElement(signedInfo, SignatureMethodTag)
@@ -92,7 +99,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId)
 	}
 	canonicalizationAlgorithm := ctx.createNamespacedElement(transforms, TransformTag)
-	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, CanonicalXML11AlgorithmId)
+	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Algorithm))
 
 	// /SignedInfo/Reference/DigestMethod
 	digestMethod := ctx.createNamespacedElement(reference, DigestMethodTag)
