@@ -106,7 +106,8 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 
 func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nAlgorithmId string) ([]byte, error) {
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalHack(el))
+	doc.SetRoot(canonicalize(el, SignatureAlgorithm(c14nAlgorithmId)))
+
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -140,7 +141,7 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 
 	// Canonicalize the xml
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalHack(signedInfo))
+	doc.SetRoot(canonicalize(signedInfo, SignatureAlgorithm(signatureMethodId)))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
