@@ -6,6 +6,12 @@ import (
 	"github.com/jonboulle/clockwork"
 )
 
+// Clock wraps a clockwork.Clock (which could be real or fake) in order
+// to default to a real clock when a nil *Clock is used. In other words,
+// if you attempt to use a nil *Clock it will defer to the real system
+// clock. This allows Clock to be easily added to structs with methods
+// that currently reference the time package, without requiring every
+// instantiation of that struct to be updated.
 type Clock struct {
 	wrapped clockwork.Clock
 }
