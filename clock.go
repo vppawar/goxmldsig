@@ -47,3 +47,9 @@ func NewFakeClock(wrapped clockwork.Clock) *Clock {
 		wrapped: wrapped,
 	}
 }
+
+func NewFakeClockAt(t time.Time) *Clock {
+	return &Clock{
+		wrapped: clockwork.NewFakeClockAt(t),
+	}
+}
