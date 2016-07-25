@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/beevik/etree"
 )
@@ -19,6 +18,7 @@ var wordWrappingRegexp = regexp.MustCompile("[ \t\r\n]+")
 type ValidationContext struct {
 	CertificateStore X509CertificateStore
 	IdAttribute      string
+	Clock            *Clock
 }
 
 func NewDefaultValidationContext(certificateStore X509CertificateStore) *ValidationContext {
@@ -298,7 +298,7 @@ func contains(roots []*x509.Certificate, cert *x509.Certificate) bool {
 }
 
 func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certificate, error) {
-	now := time.Now()
+	now := ctx.Clock.Now()
 	el = el.Copy()
 
 	idAttr := el.SelectAttr(DefaultIdAttr)
