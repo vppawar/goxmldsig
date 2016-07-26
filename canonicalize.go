@@ -171,12 +171,15 @@ func excCanonicalPrep(el *etree.Element) *etree.Element {
 	return _excCanonicalPrep(el, make(map[string]c14nSpace))
 }
 
-func canonicalize(el *etree.Element, canonicalizationMethod SignatureAlgorithm) *etree.Element {
+func canonicalize(el *etree.Element, canonicalizationMethod AlgorithmID) (*etree.Element, error) {
 	switch canonicalizationMethod {
-	case CanonicalXML10AlgorithmId:
-		return excCanonicalPrep(el)
-	default:
-		return canonicalHack(el)
-	}
+	case CanonicalXML10ExclusiveAlgorithmId:
+		return excCanonicalPrep(el), nil
 
+	case CanonicalXML11AlgorithmId:
+		return canonicalHack(el), nil
+
+	default:
+		return nil, fmt.Errorf("unknown canonicalization algorithm: %s", canonicalizationMethod.String())
+	}
 }

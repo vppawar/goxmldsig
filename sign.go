@@ -17,7 +17,7 @@ type SigningContext struct {
 	KeyStore    X509KeyStore
 	IdAttribute string
 	Prefix      string
-	Algorithm   SignatureAlgorithm
+	Algorithm   AlgorithmID
 }
 
 func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
@@ -31,8 +31,13 @@ func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 }
 
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
+	canonical, err := canonicalize(el, ctx.Algorithm)
+	if err != nil {
+		return nil, err
+	}
+
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(el, ctx.Algorithm))
+	doc.SetRoot(canonical)
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -40,7 +45,7 @@ func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
 	}
 
 	hash := ctx.Hash.New()
-	_, err := doc.WriteTo(hash)
+	_, err = doc.WriteTo(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +96,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 	transforms := ctx.createNamespacedElement(reference, TransformsTag)
 	if enveloped {
 		envelopedTransform := ctx.createNamespacedElement(transforms, TransformTag)
-		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId)
+		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId.String())
 	}
 	canonicalizationAlgorithm := ctx.createNamespacedElement(transforms, TransformTag)
 	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Algorithm))

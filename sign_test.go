@@ -47,7 +47,7 @@ func TestSign(t *testing.T) {
 
 	canonicalizationMethodAttr := canonicalizationMethodElement.SelectAttr(AlgorithmAttr)
 	require.NotEmpty(t, canonicalizationMethodAttr)
-	require.Equal(t, CanonicalXML11AlgorithmId, canonicalizationMethodAttr.Value)
+	require.Equal(t, CanonicalXML11AlgorithmId.String(), canonicalizationMethodAttr.Value)
 
 	signatureMethodElement := signedInfo.FindElement("//" + SignatureMethodTag)
 	require.NotEmpty(t, signatureMethodElement)
@@ -71,7 +71,7 @@ func TestSign(t *testing.T) {
 
 	algorithmAttr := transformElement.SelectAttr(AlgorithmAttr)
 	require.NotEmpty(t, algorithmAttr)
-	require.Equal(t, EnvelopedSignatureAltorithmId, algorithmAttr.Value)
+	require.Equal(t, EnvelopedSignatureAltorithmId.String(), algorithmAttr.Value)
 
 	digestMethodElement := referenceElement.FindElement("//" + DigestMethodTag)
 	require.NotEmpty(t, digestMethodElement)

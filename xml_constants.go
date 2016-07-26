@@ -30,16 +30,19 @@ const (
 	DefaultIdAttr = "ID"
 )
 
-type SignatureAlgorithm string
+type AlgorithmID string
+
+func (id AlgorithmID) String() string {
+	return string(id)
+}
 
 //Well-known signature algorithms
 const (
-	// NOTE(russell_h): I guess 1.0 is "exclusive" and 1.1 isn't
-	CanonicalXML10AlgorithmId SignatureAlgorithm = "http://www.w3.org/2001/10/xml-exc-c14n#"
-	CanonicalXML11AlgorithmId                    = "http://www.w3.org/2006/12/xml-c14n11"
-)
-const (
-	EnvelopedSignatureAltorithmId = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
+	// Supported canonicalization algorithms
+	CanonicalXML10ExclusiveAlgorithmId AlgorithmID = "http://www.w3.org/2001/10/xml-exc-c14n#"
+	CanonicalXML11AlgorithmId          AlgorithmID = "http://www.w3.org/2006/12/xml-c14n11"
+
+	EnvelopedSignatureAltorithmId AlgorithmID = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
 )
 
 var digestAlgorithmIdentifiers = map[crypto.Hash]string{
