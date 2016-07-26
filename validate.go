@@ -128,7 +128,7 @@ func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nA
 	return hash.Sum(nil), nil
 }
 
-func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, signatureMethodId string, cert *x509.Certificate, sig []byte) error {
+func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, c14nAlgorithmId, signatureMethodId string, cert *x509.Certificate, sig []byte) error {
 	signedInfo := signatureElement.FindElement(childPath(signatureElement.Space, SignedInfoTag))
 	if signedInfo == nil {
 		return errors.New("Missing SignedInfo")
@@ -141,7 +141,7 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 
 	// Canonicalize the xml
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(signedInfo, AlgorithmID(signatureMethod)))
+	doc.SetRoot(canonicalize(signedInfo, AlgorithmID(c14nAlgorithmId)))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -280,7 +280,7 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Ce
 		return nil, errors.New("Could not decode signature")
 	}
 	// Actually verify the 'SignedInfo' was signed by a trusted source
-	err = ctx.verifySignedInfo(sig, signatureMethodAlgorithmAttr.Value, cert, decodedSignature)
+	err = ctx.verifySignedInfo(sig, c14nAlgorithmId, signatureMethodAlgorithmAttr.Value, cert, decodedSignature)
 	if err != nil {
 		return nil, err
 	}
