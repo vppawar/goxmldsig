@@ -13,39 +13,31 @@ import (
 )
 
 type SigningContext struct {
-	Hash        crypto.Hash
-	KeyStore    X509KeyStore
-	IdAttribute string
-	Prefix      string
-	Algorithm   AlgorithmID
+	Hash          crypto.Hash
+	KeyStore      X509KeyStore
+	IdAttribute   string
+	Prefix        string
+	Canonicalizer Canonicalizer
 }
 
 func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 	return &SigningContext{
-		Hash:        crypto.SHA256,
-		KeyStore:    ks,
-		IdAttribute: DefaultIdAttr,
-		Prefix:      DefaultPrefix,
-		Algorithm:   CanonicalXML11AlgorithmId,
+		Hash:          crypto.SHA256,
+		KeyStore:      ks,
+		IdAttribute:   DefaultIdAttr,
+		Prefix:        DefaultPrefix,
+		Canonicalizer: MakeC14N11Canonicalizer(),
 	}
 }
 
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
-	canonical, err := canonicalize(el, ctx.Algorithm)
+	canonical, err := ctx.Canonicalizer.Canonicalize(el)
 	if err != nil {
 		return nil, err
 	}
 
-	doc := etree.NewDocument()
-	doc.SetRoot(canonical)
-	doc.WriteSettings = etree.WriteSettings{
-		CanonicalAttrVal: true,
-		CanonicalEndTags: true,
-		CanonicalText:    true,
-	}
-
 	hash := ctx.Hash.New()
-	_, err = doc.WriteTo(hash)
+	_, err = hash.Write(canonical)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +68,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 
 	// /SignedInfo/CanonicalizationMethod
 	canonicalizationMethod := ctx.createNamespacedElement(signedInfo, CanonicalizationMethodTag)
-	canonicalizationMethod.CreateAttr(AlgorithmAttr, string(ctx.Algorithm))
+	canonicalizationMethod.CreateAttr(AlgorithmAttr, string(ctx.Canonicalizer.Algorithm()))
 
 	// /SignedInfo/SignatureMethod
 	signatureMethod := ctx.createNamespacedElement(signedInfo, SignatureMethodTag)
@@ -99,7 +91,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId.String())
 	}
 	canonicalizationAlgorithm := ctx.createNamespacedElement(transforms, TransformTag)
-	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Algorithm))
+	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Canonicalizer.Algorithm()))
 
 	// /SignedInfo/Reference/DigestMethod
 	digestMethod := ctx.createNamespacedElement(reference, DigestMethodTag)

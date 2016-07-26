@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/beevik/etree"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -13,57 +14,23 @@ const (
 )
 
 func TestExcC14N10(t *testing.T) {
-	raw := etree.NewDocument()
+	canonicalizer := MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
 
+	raw := etree.NewDocument()
 	raw.ReadFromString(assertion)
 
-	hacked := excCanonicalPrep(raw.Root())
-
-	hd := etree.NewDocument()
-
-	hd.SetRoot(hacked)
-
-	hd.WriteSettings = etree.WriteSettings{
-		CanonicalAttrVal: true,
-		CanonicalEndTags: true,
-	}
-
-	hs, err := hd.WriteToString()
-	if err != nil {
-		t.Fatalf("could not write c14n doc: %v", err)
-	}
-
-	if hs != assertionC14ned {
-		t.Log(hs)
-		t.Log(assertionC14ned)
-		t.Errorf("Wrong canonical representation.")
-	}
+	canonicalized, err := canonicalizer.Canonicalize(raw.Root())
+	require.NoError(t, err)
+	require.Equal(t, assertionC14ned, string(canonicalized))
 }
 
 func TestC14N11(t *testing.T) {
-	raw := etree.NewDocument()
+	canonicalizer := MakeC14N11Canonicalizer()
 
+	raw := etree.NewDocument()
 	raw.ReadFromString(assertion)
 
-	hacked := canonicalHack(raw.Root())
-
-	hd := etree.NewDocument()
-
-	hd.SetRoot(hacked)
-
-	hd.WriteSettings = etree.WriteSettings{
-		CanonicalAttrVal: true,
-		CanonicalEndTags: true,
-	}
-
-	hs, err := hd.WriteToString()
-	if err != nil {
-		t.Fatalf("could not write c14n doc: %v", err)
-	}
-
-	if hs != c14n11 {
-		t.Log(hs)
-		t.Log(c14n11)
-		t.Errorf("Wrong canonical representation.")
-	}
+	canonicalized, err := canonicalizer.Canonicalize(raw.Root())
+	require.NoError(t, err)
+	require.Equal(t, c14n11, string(canonicalized))
 }
