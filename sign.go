@@ -17,7 +17,7 @@ type SigningContext struct {
 	KeyStore    X509KeyStore
 	IdAttribute string
 	Prefix      string
-	Algorithm   SignatureAlgorithm
+	Algorithm   AlgorithmID
 }
 
 func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
@@ -91,7 +91,7 @@ func (ctx *SigningContext) constructSignedInfo(el *etree.Element, enveloped bool
 	transforms := ctx.createNamespacedElement(reference, TransformsTag)
 	if enveloped {
 		envelopedTransform := ctx.createNamespacedElement(transforms, TransformTag)
-		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId)
+		envelopedTransform.CreateAttr(AlgorithmAttr, EnvelopedSignatureAltorithmId.String())
 	}
 	canonicalizationAlgorithm := ctx.createNamespacedElement(transforms, TransformTag)
 	canonicalizationAlgorithm.CreateAttr(AlgorithmAttr, string(ctx.Algorithm))

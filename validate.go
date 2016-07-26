@@ -85,12 +85,12 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 			return nil, "", errors.New("Missing Algorithm attribute")
 		}
 
-		switch algo.Value {
+		switch AlgorithmID(algo.Value) {
 		case EnvelopedSignatureAltorithmId:
 			if !recursivelyRemoveElement(root, sig) {
 				return nil, "", errors.New("Error applying canonicalization transform: Signature not found")
 			}
-		case string(CanonicalXML10AlgorithmId), string(CanonicalXML11AlgorithmId):
+		case CanonicalXML10ExclusiveAlgorithmId, CanonicalXML11AlgorithmId:
 			c14nAlgorithm = algo.Value
 		default:
 			return nil, "", errors.New("Unknown Transform Algorithm: " + algo.Value)
@@ -106,7 +106,7 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 
 func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nAlgorithmId string) ([]byte, error) {
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(el, SignatureAlgorithm(c14nAlgorithmId)))
+	doc.SetRoot(canonicalize(el, AlgorithmID(c14nAlgorithmId)))
 
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
@@ -141,7 +141,7 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 
 	// Canonicalize the xml
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(signedInfo, SignatureAlgorithm(signatureMethodId)))
+	doc.SetRoot(canonicalize(signedInfo, AlgorithmID(signatureMethod)))
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
