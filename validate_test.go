@@ -100,12 +100,13 @@ pvTFTPnpkavJm81FLlUhiE/oFgKlCDLWDknSpXAI0uZGERcwPca6xvIMh86LjQKjbVci9FYDStXC
 qRnqQ+TccSu/B6uONFsDEngGcXSKfB+a</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature><saml2:Subject xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"><saml2:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">phoebe.simon@scaleft.com</saml2:NameID><saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml2:SubjectConfirmationData InResponseTo="_213843b4-0693-47b8-b2f6-c41e316015cc" NotOnOrAfter="2016-03-22T19:27:57.054Z" Recipient="http://localhost:8080/v1/_saml_callback"/></saml2:SubjectConfirmation></saml2:Subject><saml2:Conditions NotBefore="2016-03-22T19:17:57.054Z" NotOnOrAfter="2016-03-22T19:27:57.054Z" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"><saml2:AudienceRestriction><saml2:Audience>123</saml2:Audience></saml2:AudienceRestriction></saml2:Conditions><saml2:AuthnStatement AuthnInstant="2016-03-22T19:22:57.054Z" SessionIndex="_213843b4-0693-47b8-b2f6-c41e316015cc" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"><saml2:AuthnContext><saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml2:AuthnContextClassRef></saml2:AuthnContext></saml2:AuthnStatement><saml2:AttributeStatement xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"><saml2:Attribute Name="FirstName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:unspecified"><saml2:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">Phoebe</saml2:AttributeValue></saml2:Attribute><saml2:Attribute Name="LastName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:unspecified"><saml2:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">Simon</saml2:AttributeValue></saml2:Attribute><saml2:Attribute Name="Email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:unspecified"><saml2:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">phoebe.simon@scaleft.com</saml2:AttributeValue></saml2:Attribute></saml2:AttributeStatement></saml2:Assertion></saml2p:Response>`
 
 func TestDigest(t *testing.T) {
+	canonicalizer := MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
 	doc := etree.NewDocument()
 	err := doc.ReadFromBytes([]byte(canonicalResponse))
 	require.NoError(t, err)
 
 	vc := NewDefaultValidationContext(nil)
-	digest, err := vc.digest(doc.Root(), "http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/10/xml-exc-c14n#")
+	digest, err := vc.digest(doc.Root(), "http://www.w3.org/2001/04/xmlenc#sha256", canonicalizer)
 	require.NoError(t, err)
 	require.Equal(t, "gvXF2ygtu4WbVYdepEtHFbgCZLfKW893eFF+x6gjX80=", base64.StdEncoding.EncodeToString(digest))
 
@@ -114,7 +115,7 @@ func TestDigest(t *testing.T) {
 	require.NoError(t, err)
 
 	vc = NewDefaultValidationContext(nil)
-	digest, err = vc.digest(doc.Root(), "http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/10/xml-exc-c14n#")
+	digest, err = vc.digest(doc.Root(), "http://www.w3.org/2001/04/xmlenc#sha256", canonicalizer)
 	require.NoError(t, err)
 	require.Equal(t, "npTAl6kraksBlCRlunbyD6nICTcfsDaHjPXVxoDPrw0=", base64.StdEncoding.EncodeToString(digest))
 
@@ -138,11 +139,11 @@ func TestTransform(t *testing.T) {
 
 	transforms := reference.FindElement(childPath(sig.Space, TransformsTag))
 	require.NotEmpty(t, transforms)
-	transformed, canonicalFunction, err := vc.transform(el, sig, transforms.ChildElements())
+	transformed, canonicalizer, err := vc.transform(el, sig, transforms.ChildElements())
 
 	require.NoError(t, err)
 	require.NotEmpty(t, transformed)
-	require.Equal(t, "http://www.w3.org/2001/10/xml-exc-c14n#", canonicalFunction)
+	require.IsType(t, &c14N10ExclusiveCanonicalizer{}, canonicalizer)
 
 	doc = etree.NewDocument()
 	doc.SetRoot(transformed)

@@ -21,14 +21,10 @@ func TestSign(t *testing.T) {
 	id := "_" + uuid.NewV4().String()
 	authnRequest.CreateAttr("ID", id)
 	hash := crypto.SHA256.New()
-	doc := etree.NewDocument()
-	doc.SetRoot(canonicalHack(authnRequest))
-	doc.WriteSettings = etree.WriteSettings{
-		CanonicalAttrVal: true,
-		CanonicalEndTags: true,
-		CanonicalText:    true,
-	}
-	_, err := doc.WriteTo(hash)
+	canonicalized, err := ctx.Canonicalizer.Canonicalize(authnRequest)
+	require.NoError(t, err)
+
+	_, err = hash.Write(canonicalized)
 	require.NoError(t, err)
 	digest := hash.Sum(nil)
 
@@ -103,12 +99,7 @@ func TestSignErrors(t *testing.T) {
 	require.Error(t, err)
 
 	randomKeyStore = RandomKeyStoreForTest()
-	ctx = &SigningContext{
-		Hash:        crypto.SHA256,
-		KeyStore:    randomKeyStore,
-		IdAttribute: DefaultIdAttr,
-		Prefix:      DefaultPrefix,
-	}
+	ctx = NewDefaultSigningContext(randomKeyStore)
 
 	authnRequest = &etree.Element{
 		Space: "samlp",
