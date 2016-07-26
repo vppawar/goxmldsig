@@ -38,6 +38,12 @@ func (id AlgorithmID) String() string {
 	return string(id)
 }
 
+const (
+	RSASHA1SignatureMethod   = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+	RSASHA256SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+	RSASHA512SignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"
+)
+
 //Well-known signature algorithms
 const (
 	// Supported canonicalization algorithms
@@ -66,7 +72,7 @@ func init() {
 }
 
 var signatureMethodIdentifiers = map[crypto.Hash]string{
-	crypto.SHA1:   "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
-	crypto.SHA256: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
-	crypto.SHA512: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512",
+	crypto.SHA1:   RSASHA1SignatureMethod,
+	crypto.SHA256: RSASHA256SignatureMethod,
+	crypto.SHA512: RSASHA512SignatureMethod,
 }

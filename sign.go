@@ -8,6 +8,7 @@ import (
 	_ "crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 
 	"github.com/beevik/etree"
 )
@@ -28,6 +29,17 @@ func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 		Prefix:        DefaultPrefix,
 		Canonicalizer: MakeC14N11Canonicalizer(),
 	}
+}
+
+func (ctx *SigningContext) SetSignatureMethod(algorithmID string) error {
+	hash, ok := signatureMethodsByIdentifier[algorithmID]
+	if !ok {
+		return fmt.Errorf("Unknown SignatureMethod: %s", algorithmID)
+	}
+
+	ctx.Hash = hash
+
+	return nil
 }
 
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
