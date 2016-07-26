@@ -105,8 +105,13 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 }
 
 func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nAlgorithmId string) ([]byte, error) {
+	canonical, err := canonicalize(el, AlgorithmID(c14nAlgorithmId))
+	if err != nil {
+		return nil, err
+	}
+
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(el, AlgorithmID(c14nAlgorithmId)))
+	doc.SetRoot(canonical)
 
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
@@ -120,7 +125,7 @@ func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId, c14nA
 	}
 
 	hash := digestAlgorithm.New()
-	_, err := doc.WriteTo(hash)
+	_, err = doc.WriteTo(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +145,13 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 	}
 
 	// Canonicalize the xml
+	canonical, err := canonicalize(signedInfo, AlgorithmID(c14nAlgorithmId))
+	if err != nil {
+		return err
+	}
+
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(signedInfo, AlgorithmID(c14nAlgorithmId)))
+	doc.SetRoot(canonical)
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -154,7 +164,7 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 	}
 
 	hash := signatureAlgorithm.New()
-	_, err := doc.WriteTo(hash)
+	_, err = doc.WriteTo(hash)
 	if err != nil {
 		return err
 	}

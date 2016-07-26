@@ -31,8 +31,13 @@ func NewDefaultSigningContext(ks X509KeyStore) *SigningContext {
 }
 
 func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
+	canonical, err := canonicalize(el, ctx.Algorithm)
+	if err != nil {
+		return nil, err
+	}
+
 	doc := etree.NewDocument()
-	doc.SetRoot(canonicalize(el, ctx.Algorithm))
+	doc.SetRoot(canonical)
 	doc.WriteSettings = etree.WriteSettings{
 		CanonicalAttrVal: true,
 		CanonicalEndTags: true,
@@ -40,7 +45,7 @@ func (ctx *SigningContext) digest(el *etree.Element) ([]byte, error) {
 	}
 
 	hash := ctx.Hash.New()
-	_, err := doc.WriteTo(hash)
+	_, err = doc.WriteTo(hash)
 	if err != nil {
 		return nil, err
 	}
