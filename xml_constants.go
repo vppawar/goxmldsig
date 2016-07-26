@@ -22,12 +22,14 @@ const (
 	KeyInfoTag                = "KeyInfo"
 	X509DataTag               = "X509Data"
 	X509CertificateTag        = "X509Certificate"
+	InclusiveNamespacesTag    = "InclusiveNamespaces"
 )
 
 const (
-	AlgorithmAttr = "Algorithm"
-	URIAttr       = "URI"
-	DefaultIdAttr = "ID"
+	AlgorithmAttr  = "Algorithm"
+	URIAttr        = "URI"
+	DefaultIdAttr  = "ID"
+	PrefixListAttr = "PrefixList"
 )
 
 type AlgorithmID string

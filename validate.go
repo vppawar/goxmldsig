@@ -97,9 +97,9 @@ func (ctx *ValidationContext) transform(root, sig *etree.Element, transforms []*
 
 		case CanonicalXML10ExclusiveAlgorithmId:
 			var prefixList string
-			ins := transform.FindElement(childPath("", "InclusiveNamespaces"))
+			ins := transform.FindElement(childPath("", InclusiveNamespacesTag))
 			if ins != nil {
-				prefixListEl := ins.SelectAttr("PrefixList")
+				prefixListEl := ins.SelectAttr(PrefixListAttr)
 				if prefixListEl != nil {
 					prefixList = prefixListEl.Value
 				}
