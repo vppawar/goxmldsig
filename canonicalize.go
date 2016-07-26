@@ -21,7 +21,7 @@ type c14N10ExclusiveCanonicalizer struct {
 // from a PrefixList in NMTOKENS format (a white space separated list).
 func MakeC14N10ExclusiveCanonicalizerWithPrefixList(prefixList string) Canonicalizer {
 	prefixes := strings.Fields(prefixList)
-	prefixSet := make(map[string]struct{}, len(prefixList))
+	prefixSet := make(map[string]struct{}, len(prefixes))
 
 	for _, prefix := range prefixes {
 		prefixSet[prefix] = struct{}{}
