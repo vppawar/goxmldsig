@@ -1,6 +1,7 @@
 package dsig
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
@@ -13,7 +14,6 @@ import (
 )
 
 var uriRegexp = regexp.MustCompile("^#[a-zA-Z_][\\w.-]*$")
-var wordWrappingRegexp = regexp.MustCompile("[ \t\r\n]+")
 
 type ValidationContext struct {
 	CertificateStore X509CertificateStore
@@ -251,9 +251,12 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Ce
 		return nil, err
 	}
 
-	// Allow the digest to wrap multiple lines
-	digested := wordWrappingRegexp.ReplaceAllString(digestValue.Text(), "")
-	if digested != base64.StdEncoding.EncodeToString(digest) {
+	decodedDigestValue, err := base64.StdEncoding.DecodeString(digestValue.Text())
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(digest, decodedDigestValue) {
 		return nil, errors.New("Signature could not be verified")
 	}
 
