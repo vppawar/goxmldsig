@@ -31,7 +31,7 @@ func main() {
     elementToSign := &etree.Element{
         Tag: "ExampleElement",
     }
-    elementToSign.CreateAttr("ID", "1234")
+    elementToSign.CreateAttr("ID", "id1234")
 
     // Sign the element
     signedElement, err := ctx.SignEnveloped(elementToSign)
