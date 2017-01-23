@@ -13,24 +13,41 @@ const (
 	assertionC14ned = `<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" AssertionConsumerServiceIndex="0" AssertionConsumerServiceURL="https://saml2.test.astuart.co/sso/saml2" AttributeConsumingServiceIndex="0" Destination="http://idp.astuart.co/idp/profile/SAML2/Redirect/SSO" ID="_88a93ebe-abdf-48cd-9ed0-b0dd1b252909" IssueInstant="2016-04-28T15:37:17" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Version="2.0"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">https://saml2.test.astuart.co/sso/saml2</saml:Issuer><samlp:NameIDPolicy AllowCreate="true" Format=""></samlp:NameIDPolicy><samlp:RequestedAuthnContext Comparison="exact"><saml:AuthnContextClassRef xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml:AuthnContextClassRef></samlp:RequestedAuthnContext></samlp:AuthnRequest>`
 )
 
-func TestExcC14N10(t *testing.T) {
-	canonicalizer := MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
+const (
+	xmldoc                             = `<Foo ID="id1619705532971228558789260" xmlns:bar="urn:bar" xmlns="urn:foo"><bar:Baz></bar:Baz></Foo>`
+	xmldocC14N10ExclusiveCanonicalized = `<Foo xmlns="urn:foo" ID="id1619705532971228558789260"><bar:Baz xmlns:bar="urn:bar"></bar:Baz></Foo>`
+	xmldocC14N11Canonicalized          = `<Foo xmlns="urn:foo" xmlns:bar="urn:bar" ID="id1619705532971228558789260"><bar:Baz></bar:Baz></Foo>`
+)
+
+func runCanonicalizationTest(t *testing.T, useC14N10ExclusiveCanonicalizer bool, xmlstr string, canonicalXmlstr string) {
+	var canonicalizer Canonicalizer
+	if useC14N10ExclusiveCanonicalizer {
+		canonicalizer = MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
+	} else {
+		canonicalizer = MakeC14N11Canonicalizer()
+	}
 
 	raw := etree.NewDocument()
-	raw.ReadFromString(assertion)
+	err := raw.ReadFromString(xmlstr)
+	require.NoError(t, err)
 
 	canonicalized, err := canonicalizer.Canonicalize(raw.Root())
 	require.NoError(t, err)
-	require.Equal(t, assertionC14ned, string(canonicalized))
+	require.Equal(t, canonicalXmlstr, string(canonicalized))
+}
+
+func TestExcC14N10(t *testing.T) {
+	runCanonicalizationTest(t, true, assertion, assertionC14ned)
 }
 
 func TestC14N11(t *testing.T) {
-	canonicalizer := MakeC14N11Canonicalizer()
+	runCanonicalizationTest(t, false, assertion, c14n11)
+}
 
-	raw := etree.NewDocument()
-	raw.ReadFromString(assertion)
+func TestXmldocC14N10Exclusive(t *testing.T) {
+	runCanonicalizationTest(t, true, xmldoc, xmldocC14N10ExclusiveCanonicalized)
+}
 
-	canonicalized, err := canonicalizer.Canonicalize(raw.Root())
-	require.NoError(t, err)
-	require.Equal(t, c14n11, string(canonicalized))
+func TestXmldocC14N11(t *testing.T) {
+	runCanonicalizationTest(t, false, xmldoc, xmldocC14N11Canonicalized)
 }
