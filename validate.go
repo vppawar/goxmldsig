@@ -352,26 +352,33 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 		return nil, errors.New("Missing signature referencing the top-level element")
 	}
 
-	// Get the x509 element from the signature
-	x509Element := signatureElement.FindElement("//" + childPath(signatureElement.Space, X509CertificateTag))
-	if x509Element == nil {
-		return nil, errors.New("Missing x509 Element")
-	}
-
-	x509Text := "-----BEGIN CERTIFICATE-----\n" + x509Element.Text() + "\n-----END CERTIFICATE-----"
-	block, _ := pem.Decode([]byte(x509Text))
-	if block == nil {
-		return nil, errors.New("Failed to parse certificate PEM")
-	}
-
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
 	roots, err := ctx.CertificateStore.Certificates()
 	if err != nil {
 		return nil, err
+	}
+
+	var cert *x509.Certificate
+
+	// Get the x509 element from the signature
+	x509Element := signatureElement.FindElement("//" + childPath(signatureElement.Space, X509CertificateTag))
+	if x509Element == nil {
+		// Use root certificate if there is only one and it is not contained in signatureElement
+		if len(roots) == 1 {
+			cert = roots[0]
+		} else {
+			return nil, errors.New("Missing x509 Element")
+		}
+	} else {
+		x509Text := "-----BEGIN CERTIFICATE-----\n" + x509Element.Text() + "\n-----END CERTIFICATE-----"
+		block, _ := pem.Decode([]byte(x509Text))
+		if block == nil {
+			return nil, errors.New("Failed to parse certificate PEM")
+		}
+
+		cert, err = x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Verify that the certificate is one we trust
