@@ -108,5 +108,33 @@ func TestSignErrors(t *testing.T) {
 
 	_, err = ctx.SignEnveloped(authnRequest)
 	require.Error(t, err)
+}
 
+func TestSignNonDefaultID(t *testing.T) {
+	// Sign a document by referencing a non-default ID attribute ("OtherID"),
+	// and confirm that the signature correctly references it.
+	ks := RandomKeyStoreForTest()
+	ctx := &SigningContext{
+		Hash:          crypto.SHA256,
+		KeyStore:      ks,
+		IdAttribute:   "OtherID",
+		Prefix:        DefaultPrefix,
+		Canonicalizer: MakeC14N11Canonicalizer(),
+	}
+
+	signable := &etree.Element{
+		Space: "foo",
+		Tag:   "Bar",
+	}
+
+	id := "_" + uuid.NewV4().String()
+
+	signable.CreateAttr("OtherID", id)
+	signed, err := ctx.SignEnveloped(signable)
+	require.NoError(t, err)
+
+	ref := signed.FindElement("./Signature/SignedInfo/Reference")
+	require.NotNil(t, ref)
+	refURI := ref.SelectAttrValue("URI", "")
+	require.Equal(t, refURI, "#"+id)
 }
