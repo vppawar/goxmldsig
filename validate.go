@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"regexp"
@@ -369,13 +368,12 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 			return nil, errors.New("Missing x509 Element")
 		}
 	} else {
-		x509Text := "-----BEGIN CERTIFICATE-----\n" + x509Element.Text() + "\n-----END CERTIFICATE-----"
-		block, _ := pem.Decode([]byte(x509Text))
-		if block == nil {
-			return nil, errors.New("Failed to parse certificate PEM")
+		certData, err := base64.StdEncoding.DecodeString(x509Element.Text())
+		if err != nil {
+			return nil, errors.New("Failed to parse certificate")
 		}
 
-		cert, err = x509.ParseCertificate(block.Bytes)
+		cert, err = x509.ParseCertificate(certData)
 		if err != nil {
 			return nil, err
 		}
