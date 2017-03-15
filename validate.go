@@ -14,6 +14,12 @@ import (
 
 var uriRegexp = regexp.MustCompile("^#[a-zA-Z_][\\w.-]*$")
 
+var (
+	// ErrMissingSignature indicates that no enveloped signature was found referencing
+	// the top level element passed for signature verification.
+	ErrMissingSignature = errors.New("Missing signature referencing the top-level element")
+)
+
 type ValidationContext struct {
 	CertificateStore X509CertificateStore
 	IdAttribute      string
@@ -348,7 +354,7 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 	}
 
 	if signatureElement == nil {
-		return nil, errors.New("Missing signature referencing the top-level element")
+		return nil, ErrMissingSignature
 	}
 
 	roots, err := ctx.CertificateStore.Certificates()
