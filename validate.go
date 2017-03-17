@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	"github.com/beevik/etree"
+	"github.com/russellhaering/goxmldsig/etreeutils"
 )
 
 var uriRegexp = regexp.MustCompile("^#[a-zA-Z_][\\w.-]*$")
@@ -196,14 +197,13 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Ce
 
 	// Verify the document minus the signedInfo against the 'DigestValue'
 	// Find the 'Signature' element
-	sig := el.FindElement(SignatureTag)
+	sig, err := etreeutils.FindElement(el, Namespace, SignatureTag)
+	if err != nil {
+		return nil, err
+	}
 
 	if sig == nil {
 		return nil, errors.New("Missing Signature")
-	}
-
-	if !inNamespace(sig, Namespace) {
-		return nil, errors.New("Signature element is in the wrong namespace")
 	}
 
 	// Get the 'SignedInfo' element
