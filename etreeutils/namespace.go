@@ -93,16 +93,41 @@ func (ctx NSContext) LookupPrefix(prefix string) (string, error) {
 	}
 }
 
-// FindElement conducts a depth-first search starting at (and inclusive of)
-// a root element, for an element with the specified namespace and tag. The
-// search is aggressive about namespace lookups - any failed lookup will cause
-// the search to fail. If the search encounters no errors and finds no matching
-// elements it will return nil.
-func FindElement(root *etree.Element, namespace, tag string) (*etree.Element, error) {
-	return search(DefaultNSContext, root, namespace, tag)
+// BuildParentContext recurses upward from an element in order to build an NSContext
+// for its immediate parent. If the element has no parent DefaultNSContext
+// is returned.
+func BuildParentContext(el *etree.Element) (NSContext, error) {
+	parent := el.Parent()
+
+	if parent == nil {
+		return DefaultNSContext, nil
+	}
+
+	ctx, err := BuildParentContext(parent)
+	if err != nil {
+		return ctx, err
+	}
+
+	return ctx.SubContext(parent)
 }
 
-func search(ctx NSContext, el *etree.Element, namespace, tag string) (*etree.Element, error) {
+// FindElement behaves the same as FindElementInContext, but it first calls BuildParentContext
+// in order to build a surrounding context for the passed element.
+func FindElement(root *etree.Element, namespace, tag string) (*etree.Element, error) {
+	ctx, err := BuildParentContext(root)
+	if err != nil {
+		return nil, err
+	}
+
+	return FindElementInContext(ctx, root, namespace, tag)
+}
+
+// FindElementInContext conducts a depth-first search starting at (and inclusive of)
+// a root element, for an element with the specified namespace and tag. The passed
+// NSContext is used for namespace resolution. The search is aggressive about namespace
+// lookups - any failed lookup will cause the search to fail. If the search encounters
+// no errors and finds no matching elements it will return nil.
+func FindElementInContext(ctx NSContext, el *etree.Element, namespace, tag string) (*etree.Element, error) {
 	ctx, err := ctx.SubContext(el)
 	if err != nil {
 		return nil, err
@@ -125,7 +150,7 @@ func search(ctx NSContext, el *etree.Element, namespace, tag string) (*etree.Ele
 
 	// Recursively search child elements instead.
 	for _, child := range el.ChildElements() {
-		el, err := search(ctx, child, namespace, tag)
+		el, err := FindElementInContext(ctx, child, namespace, tag)
 		if err != nil {
 			return nil, err
 		}

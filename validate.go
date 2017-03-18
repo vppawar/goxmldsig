@@ -193,11 +193,18 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 }
 
 func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Certificate) (*etree.Element, error) {
+	// We're going to make a copy of the element to avoid mutating the one we were passed.
+	// However, copying the element loses the reference to its parent. So before we copy it,
+	// build a surrounding NSContext for the element.
+	nsctx, err := etreeutils.BuildParentContext(el)
+	if err != nil {
+		return nil, err
+	}
+
 	el = el.Copy()
 
-	// Verify the document minus the signedInfo against the 'DigestValue'
 	// Find the 'Signature' element
-	sig, err := etreeutils.FindElement(el, Namespace, SignatureTag)
+	sig, err := etreeutils.FindElementInContext(nsctx, el, Namespace, SignatureTag)
 	if err != nil {
 		return nil, err
 	}
