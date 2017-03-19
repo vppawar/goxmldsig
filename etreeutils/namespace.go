@@ -206,11 +206,13 @@ func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, erro
 	return found, nil
 }
 
-// NSFindOne conducts a depth-first search for the specified element. If such an element
-// is found a reference to it is returned.
-func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
-	var found *etree.Element
-
+// NSFindIterate conducts a depth-first traversal searching for elements with the
+// specified tag in the specified namespace. For each such element, the passed
+// handler function is invoked. If the handler function returns an error
+// traversal is immediately halted. If the error returned by the handler is
+// ErrTraversalHalted then nil will be returned by NSFindIterate. If any other
+// error is returned by the handler, that error will be returned by NSFindIterate.
+func NSFindIterate(el *etree.Element, namespace, tag string, handle func(*etree.Element) error) error {
 	err := nsTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
 		currentNS, err := ctx.LookupPrefix(el.Space)
 		if err != nil {
@@ -219,14 +221,30 @@ func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error)
 
 		// Base case, el is the sought after element.
 		if currentNS == namespace && el.Tag == tag {
-			found = el
-			return ErrTraversalHalted
+			return handle(el)
 		}
 
 		return nil
 	})
 
 	if err != nil && err != ErrTraversalHalted {
+		return err
+	}
+
+	return nil
+}
+
+// NSFindOne conducts a depth-first search for the specified element. If such an element
+// is found a reference to it is returned.
+func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
+	var found *etree.Element
+
+	err := NSFindIterate(el, namespace, tag, func(el *etree.Element) error {
+		found = el
+		return ErrTraversalHalted
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
