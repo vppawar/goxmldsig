@@ -193,18 +193,11 @@ func (ctx *ValidationContext) verifySignedInfo(signatureElement *etree.Element, 
 }
 
 func (ctx *ValidationContext) validateSignature(el *etree.Element, cert *x509.Certificate) (*etree.Element, error) {
-	// We're going to make a copy of the element to avoid mutating the one we were passed.
-	// However, copying the element loses the reference to its parent. So before we copy it,
-	// build a surrounding NSContext for the element.
-	nsctx, err := etreeutils.BuildParentContext(el)
-	if err != nil {
-		return nil, err
-	}
-
+	// Make a copy of the element to avoid mutating the one we were passed.
 	el = el.Copy()
 
 	// Find the 'Signature' element
-	sig, err := etreeutils.FindElementInContext(nsctx, el, Namespace, SignatureTag)
+	sig, err := etreeutils.NSFindOne(el, Namespace, SignatureTag)
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +399,6 @@ func (ctx *ValidationContext) verifyCertificate(el *etree.Element) (*x509.Certif
 
 func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error) {
 	cert, err := ctx.verifyCertificate(el)
-
 	if err != nil {
 		return nil, err
 	}

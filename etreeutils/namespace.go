@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"sort"
+
 	"github.com/beevik/etree"
 )
 
@@ -26,8 +28,11 @@ var (
 		},
 	}
 
+	EmptyNSContext = NSContext{}
+
 	ErrReservedNamespace       = errors.New("disallowed declaration of reserved namespace")
 	ErrInvalidDefaultNamespace = errors.New("invalid default namespace declaration")
+	ErrTraversalHalted         = errors.New("traversal halted")
 )
 
 type ErrUndeclaredNSPrefix struct {
@@ -93,72 +98,137 @@ func (ctx NSContext) LookupPrefix(prefix string) (string, error) {
 	}
 }
 
-// BuildParentContext recurses upward from an element in order to build an NSContext
-// for its immediate parent. If the element has no parent DefaultNSContext
-// is returned.
-func BuildParentContext(el *etree.Element) (NSContext, error) {
-	parent := el.Parent()
-
-	if parent == nil {
-		return DefaultNSContext, nil
-	}
-
-	ctx, err := BuildParentContext(parent)
+func nsTraverse(ctx NSContext, el *etree.Element, handle func(NSContext, *etree.Element) error) error {
+	ctx, err := ctx.SubContext(el)
 	if err != nil {
-		return ctx, err
+		return err
 	}
 
-	return ctx.SubContext(parent)
+	err = handle(ctx, el)
+	if err != nil {
+		return err
+	}
+
+	// Recursively traverse child elements.
+	for _, child := range el.ChildElements() {
+		err := nsTraverse(ctx, child, handle)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-// FindElement behaves the same as FindElementInContext, but it first calls BuildParentContext
-// in order to build a surrounding context for the passed element.
-func FindElement(root *etree.Element, namespace, tag string) (*etree.Element, error) {
-	ctx, err := BuildParentContext(root)
-	if err != nil {
-		return nil, err
-	}
-
-	return FindElementInContext(ctx, root, namespace, tag)
-}
-
-// FindElementInContext conducts a depth-first search starting at (and inclusive of)
-// a root element, for an element with the specified namespace and tag. The passed
-// NSContext is used for namespace resolution. The search is aggressive about namespace
-// lookups - any failed lookup will cause the search to fail. If the search encounters
-// no errors and finds no matching elements it will return nil.
-func FindElementInContext(ctx NSContext, el *etree.Element, namespace, tag string) (*etree.Element, error) {
+func detachWithNamespaces(ctx NSContext, el *etree.Element) (*etree.Element, error) {
 	ctx, err := ctx.SubContext(el)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("Context (%s:%s):\n", el.Space, el.Tag)
-	for prefix, namespace := range ctx.prefixes {
-		fmt.Printf("  %s -> %s\n", prefix, namespace)
+	el = el.Copy()
+
+	// Build a new attribute list
+	attrs := make([]etree.Attr, 0, len(el.Attr))
+
+	// First copy over anything that isn't a namespace declaration
+	for _, attr := range el.Attr {
+		if attr.Space == xmlnsPrefix {
+			continue
+		}
+
+		if attr.Space == defaultPrefix && attr.Key == xmlnsPrefix {
+			continue
+		}
+
+		attrs = append(attrs, attr)
 	}
 
-	currentNS, err := ctx.LookupPrefix(el.Space)
-	if err != nil {
+	// Append all in-context namespace declarations
+	for prefix, namespace := range ctx.prefixes {
+		// Skip the implicit "xml" and "xmlns" prefix declarations
+		if prefix == xmlnsPrefix || prefix == xmlPrefix {
+			continue
+		}
+
+		// Also skip declararing the default namespace as XMLNamespace
+		if prefix == defaultPrefix && namespace == XMLNamespace {
+			continue
+		}
+
+		if prefix != defaultPrefix {
+			attrs = append(attrs, etree.Attr{
+				Space: xmlnsPrefix,
+				Key:   prefix,
+				Value: namespace,
+			})
+		} else {
+			attrs = append(attrs, etree.Attr{
+				Key:   prefix,
+				Value: namespace,
+			})
+		}
+	}
+
+	sort.Sort(SortedAttrs(attrs))
+
+	el.Attr = attrs
+
+	return el, nil
+}
+
+// NSSelectOne conducts a depth-first search for an element with the specified namespace
+// and tag. If such an element is found, a new *etree.Element is returned which is a
+// copy of the found element, but with all in-context namespace declarations attached
+// to the element as attributes.
+func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
+	var found *etree.Element
+
+	err := nsTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
+		currentNS, err := ctx.LookupPrefix(el.Space)
+		if err != nil {
+			return err
+		}
+
+		// Base case, el is the sought after element.
+		if currentNS == namespace && el.Tag == tag {
+			found, err = detachWithNamespaces(ctx, el)
+			return ErrTraversalHalted
+		}
+
+		return nil
+	})
+
+	if err != nil && err != ErrTraversalHalted {
 		return nil, err
 	}
 
-	// Base case, el is the sought after element.
-	if currentNS == namespace && el.Tag == tag {
-		return el, nil
-	}
+	return found, nil
+}
 
-	// Recursively search child elements instead.
-	for _, child := range el.ChildElements() {
-		el, err := FindElementInContext(ctx, child, namespace, tag)
+// NSFindOne conducts a depth-first search for the specified element. If such an element
+// is found a reference to it is returned.
+func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
+	var found *etree.Element
+
+	err := nsTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
+		currentNS, err := ctx.LookupPrefix(el.Space)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		if el != nil {
-			return el, nil
+		// Base case, el is the sought after element.
+		if currentNS == namespace && el.Tag == tag {
+			found = el
+			return ErrTraversalHalted
 		}
+
+		return nil
+	})
+
+	if err != nil && err != ErrTraversalHalted {
+		return nil, err
 	}
 
-	return nil, nil
+	return found, nil
 }
