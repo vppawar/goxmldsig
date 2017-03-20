@@ -154,11 +154,6 @@ func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicaliz
 		return errors.New("Missing SignedInfo")
 	}
 
-	// Any attributes from the 'Signature' element must be pushed down into the 'SignedInfo' element before it is canonicalized
-	for _, attr := range signatureElement.Attr {
-		signedInfo.CreateAttr(attr.Space+":"+attr.Key, attr.Value)
-	}
-
 	// Canonicalize the xml
 	canonical, err := canonicalizer.Canonicalize(signedInfo)
 	if err != nil {
@@ -265,10 +260,40 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 
 	var sig *types.Signature
 
+	// Traverse the tree looking for a Signature element
 	err := etreeutils.NSFindIterate(el, Namespace, SignatureTag, func(ctx etreeutils.NSContext, el *etree.Element) error {
+
+		found := false
+		err := etreeutils.NSFindIterateCtx(ctx, el, Namespace, SignedInfoTag,
+			func(ctx etreeutils.NSContext, signedInfo *etree.Element) error {
+				// Ignore any SignedInfo that isn't an immediate descendent of Signature.
+				if signedInfo.Parent() != el {
+					return nil
+				}
+
+				detachedSignedInfo, err := etreeutils.NSDetatch(ctx, signedInfo)
+				if err != nil {
+					return err
+				}
+
+				el.RemoveChild(signedInfo)
+				el.AddChild(detachedSignedInfo)
+
+				found = true
+
+				return etreeutils.ErrTraversalHalted
+			})
+		if err != nil {
+			return err
+		}
+
+		if !found {
+			return errors.New("Missing SignedInfo")
+		}
+
 		// Unmarshal the signature into a structured Signature type
 		_sig := &types.Signature{}
-		err := etreeutils.NSUnmarshalElement(ctx, el, _sig)
+		err = etreeutils.NSUnmarshalElement(ctx, el, _sig)
 		if err != nil {
 			return err
 		}

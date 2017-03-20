@@ -210,14 +210,21 @@ func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, erro
 	return found, nil
 }
 
-// NSFindIterate conducts a depth-first traversal searching for elements with the
-// specified tag in the specified namespace. For each such element, the passed
-// handler function is invoked. If the handler function returns an error
-// traversal is immediately halted. If the error returned by the handler is
-// ErrTraversalHalted then nil will be returned by NSFindIterate. If any other
-// error is returned by the handler, that error will be returned by NSFindIterate.
+// NSFindIterate behaves identically to NSFindIterateCtx, but uses DefaultNSContext
+// as the surrounding context.
 func NSFindIterate(el *etree.Element, namespace, tag string, handle NSIterHandler) error {
-	err := NSTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
+	return NSFindIterateCtx(DefaultNSContext, el, namespace, tag, handle)
+}
+
+// NSFindIterateCtx conducts a depth-first traversal searching for elements with the
+// specified tag in the specified namespace. It uses the passed NSContext for prefix
+// lookups. For each such element, the passed handler function is invoked. If the
+// handler function returns an error traversal is immediately halted. If the error
+// returned by the handler is  ErrTraversalHalted then nil will be returned by
+// NSFindIterate. If any other error is returned by the handler, that error will be
+// returned by NSFindIterate.
+func NSFindIterateCtx(ctx NSContext, el *etree.Element, namespace, tag string, handle NSIterHandler) error {
+	err := NSTraverse(ctx, el, func(ctx NSContext, el *etree.Element) error {
 		currentNS, err := ctx.LookupPrefix(el.Space)
 		if err != nil {
 			return err
