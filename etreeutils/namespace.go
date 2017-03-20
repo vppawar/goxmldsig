@@ -98,7 +98,13 @@ func (ctx NSContext) LookupPrefix(prefix string) (string, error) {
 	}
 }
 
-func nsTraverse(ctx NSContext, el *etree.Element, handle func(NSContext, *etree.Element) error) error {
+// NSIterHandler is a function which is invoked with a element and its surrounding
+// NSContext during traversals.
+type NSIterHandler func(NSContext, *etree.Element) error
+
+// NSTraverse traverses an element tree, invoking the passed handler for each element
+// in the tree.
+func NSTraverse(ctx NSContext, el *etree.Element, handle NSIterHandler) error {
 	ctx, err := ctx.SubContext(el)
 	if err != nil {
 		return err
@@ -111,7 +117,7 @@ func nsTraverse(ctx NSContext, el *etree.Element, handle func(NSContext, *etree.
 
 	// Recursively traverse child elements.
 	for _, child := range el.ChildElements() {
-		err := nsTraverse(ctx, child, handle)
+		err := NSTraverse(ctx, child, handle)
 		if err != nil {
 			return err
 		}
@@ -120,7 +126,9 @@ func nsTraverse(ctx NSContext, el *etree.Element, handle func(NSContext, *etree.
 	return nil
 }
 
-func detachWithNamespaces(ctx NSContext, el *etree.Element) (*etree.Element, error) {
+// NSDetatch makes a copy of the passed element, and declares any namespaces in
+// the passed context onto the new element before returning it.
+func NSDetatch(ctx NSContext, el *etree.Element) (*etree.Element, error) {
 	ctx, err := ctx.SubContext(el)
 	if err != nil {
 		return nil, err
@@ -184,22 +192,18 @@ func detachWithNamespaces(ctx NSContext, el *etree.Element) (*etree.Element, err
 func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
 	var found *etree.Element
 
-	err := nsTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
-		currentNS, err := ctx.LookupPrefix(el.Space)
+	err := NSFindIterate(el, namespace, tag, func(ctx NSContext, el *etree.Element) error {
+		var err error
+
+		found, err = NSDetatch(ctx, el)
 		if err != nil {
 			return err
 		}
 
-		// Base case, el is the sought after element.
-		if currentNS == namespace && el.Tag == tag {
-			found, err = detachWithNamespaces(ctx, el)
-			return ErrTraversalHalted
-		}
-
-		return nil
+		return ErrTraversalHalted
 	})
 
-	if err != nil && err != ErrTraversalHalted {
+	if err != nil {
 		return nil, err
 	}
 
@@ -212,8 +216,8 @@ func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, erro
 // traversal is immediately halted. If the error returned by the handler is
 // ErrTraversalHalted then nil will be returned by NSFindIterate. If any other
 // error is returned by the handler, that error will be returned by NSFindIterate.
-func NSFindIterate(el *etree.Element, namespace, tag string, handle func(*etree.Element) error) error {
-	err := nsTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
+func NSFindIterate(el *etree.Element, namespace, tag string, handle NSIterHandler) error {
+	err := NSTraverse(DefaultNSContext, el, func(ctx NSContext, el *etree.Element) error {
 		currentNS, err := ctx.LookupPrefix(el.Space)
 		if err != nil {
 			return err
@@ -221,7 +225,7 @@ func NSFindIterate(el *etree.Element, namespace, tag string, handle func(*etree.
 
 		// Base case, el is the sought after element.
 		if currentNS == namespace && el.Tag == tag {
-			return handle(el)
+			return handle(ctx, el)
 		}
 
 		return nil
@@ -239,7 +243,7 @@ func NSFindIterate(el *etree.Element, namespace, tag string, handle func(*etree.
 func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
 	var found *etree.Element
 
-	err := NSFindIterate(el, namespace, tag, func(el *etree.Element) error {
+	err := NSFindIterate(el, namespace, tag, func(ctx NSContext, el *etree.Element) error {
 		found = el
 		return ErrTraversalHalted
 	})
