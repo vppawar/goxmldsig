@@ -129,18 +129,13 @@ func TestTransform(t *testing.T) {
 	vc := NewDefaultValidationContext(nil)
 
 	el := doc.Root()
-	sig := el.FindElement("//" + SignatureTag)
-	require.NotEmpty(t, sig)
 
-	signedInfo := sig.FindElement(childPath(sig.Space, SignedInfoTag))
-	require.NotEmpty(t, signedInfo)
-	reference := signedInfo.FindElement(childPath(sig.Space, ReferenceTag))
-	require.NotEmpty(t, reference)
+	sig, err := vc.findSignature(el)
+	require.NoError(t, err)
 
-	transforms := reference.FindElement(childPath(sig.Space, TransformsTag))
-	require.NotEmpty(t, transforms)
-	transformed, canonicalizer, err := vc.transform(el, sig, transforms.ChildElements())
+	ref := &sig.SignedInfo.References[0]
 
+	transformed, canonicalizer, err := vc.transform(el, sig, ref)
 	require.NoError(t, err)
 	require.NotEmpty(t, transformed)
 	require.IsType(t, &c14N10ExclusiveCanonicalizer{}, canonicalizer)
