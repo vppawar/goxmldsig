@@ -85,6 +85,16 @@ func (ctx NSContext) SubContext(el *etree.Element) (NSContext, error) {
 	return NSContext{prefixes: prefixes}, nil
 }
 
+// Prefixes returns a copy of this context's prefix map.
+func (ctx NSContext) Prefixes() map[string]string {
+	prefixes := make(map[string]string, len(ctx.prefixes))
+	for k, v := range ctx.prefixes {
+		prefixes[k] = v
+	}
+
+	return prefixes
+}
+
 // LookupPrefix attempts to find a declared namespace for the specified prefix. If the prefix
 // is an empty string this will be the default namespace for this context. If the prefix is
 // undeclared in this context an ErrUndeclaredNSPrefix will be returned.
@@ -185,14 +195,20 @@ func NSDetatch(ctx NSContext, el *etree.Element) (*etree.Element, error) {
 	return el, nil
 }
 
-// NSSelectOne conducts a depth-first search for an element with the specified namespace
+// NSSelectOne behaves identically to NSSelectOneCtx, but uses DefaultNSContext as the
+// surrounding context.
+func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
+	return NSSelectOneCtx(DefaultNSContext, el, namespace, tag)
+}
+
+// NSSelectOneCtx conducts a depth-first search for an element with the specified namespace
 // and tag. If such an element is found, a new *etree.Element is returned which is a
 // copy of the found element, but with all in-context namespace declarations attached
 // to the element as attributes.
-func NSSelectOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
+func NSSelectOneCtx(ctx NSContext, el *etree.Element, namespace, tag string) (*etree.Element, error) {
 	var found *etree.Element
 
-	err := NSFindIterate(el, namespace, tag, func(ctx NSContext, el *etree.Element) error {
+	err := NSFindIterateCtx(ctx, el, namespace, tag, func(ctx NSContext, el *etree.Element) error {
 		var err error
 
 		found, err = NSDetatch(ctx, el)
@@ -245,12 +261,18 @@ func NSFindIterateCtx(ctx NSContext, el *etree.Element, namespace, tag string, h
 	return nil
 }
 
-// NSFindOne conducts a depth-first search for the specified element. If such an element
-// is found a reference to it is returned.
+// NSFindOne behaves identically to NSFindOneCtx, but uses DefaultNSContext for
+// context.
 func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error) {
+	return NSFindOneCtx(DefaultNSContext, el, namespace, tag)
+}
+
+// NSFindOneCtx conducts a depth-first search for the specified element. If such an element
+// is found a reference to it is returned.
+func NSFindOneCtx(ctx NSContext, el *etree.Element, namespace, tag string) (*etree.Element, error) {
 	var found *etree.Element
 
-	err := NSFindIterate(el, namespace, tag, func(ctx NSContext, el *etree.Element) error {
+	err := NSFindIterateCtx(ctx, el, namespace, tag, func(ctx NSContext, el *etree.Element) error {
 		found = el
 		return ErrTraversalHalted
 	})
@@ -260,4 +282,22 @@ func NSFindOne(el *etree.Element, namespace, tag string) (*etree.Element, error)
 	}
 
 	return found, nil
+}
+
+// NSBuildParentContext recurses upward from an element in order to build an NSContext
+// for its immediate parent. If the element has no parent DefaultNSContext
+// is returned.
+func NSBuildParentContext(el *etree.Element) (NSContext, error) {
+	parent := el.Parent()
+	if parent == nil {
+		return DefaultNSContext, nil
+	}
+
+	ctx, err := NSBuildParentContext(parent)
+
+	if err != nil {
+		return ctx, err
+	}
+
+	return ctx.SubContext(parent)
 }
