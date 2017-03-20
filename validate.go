@@ -202,7 +202,7 @@ func (ctx *ValidationContext) validateSignature(el *etree.Element, sig *types.Si
 
 	// Find the first reference which references the top-level element
 	for _, _ref := range sig.SignedInfo.References {
-		if _ref.URI[1:] == idAttr.Value {
+		if _ref.URI == "" || _ref.URI[1:] == idAttr.Value {
 			ref = &_ref
 		}
 	}
@@ -276,7 +276,7 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 		// Traverse references in the signature to determine whether it has at least
 		// one reference to the top level element. If so, conclude the search.
 		for _, ref := range _sig.SignedInfo.References {
-			if ref.URI[1:] == idAttr.Value {
+			if ref.URI == "" || ref.URI[1:] == idAttr.Value {
 				sig = _sig
 				return etreeutils.ErrTraversalHalted
 			}
