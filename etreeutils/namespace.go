@@ -164,7 +164,7 @@ func detachWithNamespaces(ctx NSContext, el *etree.Element) (*etree.Element, err
 			})
 		} else {
 			attrs = append(attrs, etree.Attr{
-				Key:   prefix,
+				Key:   xmlnsPrefix,
 				Value: namespace,
 			})
 		}
