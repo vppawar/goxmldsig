@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"regexp"
 
 	"github.com/beevik/etree"
@@ -155,7 +156,7 @@ func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicaliz
 	}
 
 	// Canonicalize the xml
-	canonical, err := canonicalizer.Canonicalize(signedInfo)
+	canonical, err := canonicalSerialize(signedInfo)
 	if err != nil {
 		return err
 	}
@@ -276,8 +277,29 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 					return err
 				}
 
+				c14NMethod := detachedSignedInfo.FindElement(childPath(detachedSignedInfo.Space, CanonicalizationMethodTag))
+				if c14NMethod == nil {
+					return errors.New("missing CanonicalizationMethod on Signature")
+				}
+
+				c14NAlgorithm := c14NMethod.SelectAttrValue(AlgorithmAttr, "")
+
+				var canonicalSignedInfo *etree.Element
+
+				switch AlgorithmID(c14NAlgorithm) {
+				case CanonicalXML10ExclusiveAlgorithmId:
+					canonicalSignedInfo = excCanonicalPrep(
+						detachedSignedInfo, map[string]c14nSpace{}, map[string]struct{}{})
+
+				case CanonicalXML11AlgorithmId:
+					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
+
+				default:
+					return fmt.Errorf("invalid CanonicalizationMethod on Signature: %s", c14NAlgorithm)
+				}
+
 				el.RemoveChild(signedInfo)
-				el.AddChild(detachedSignedInfo)
+				el.AddChild(canonicalSignedInfo)
 
 				found = true
 
