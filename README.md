@@ -1,5 +1,6 @@
 # goxmldsig
 
+[![Build Status](https://travis-ci.org/russellhaering/goxmldsig.svg?branch=master)](https://travis-ci.org/russellhaering/goxmldsig)
 [![GoDoc](https://godoc.org/github.com/russellhaering/goxmldsig?status.svg)](https://godoc.org/github.com/russellhaering/goxmldsig)
 
 XML Digital Signatures implemented in pure Go.
