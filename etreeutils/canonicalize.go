@@ -60,7 +60,7 @@ func transformExcC14n(ctx, declared NSContext, el *etree.Element, inclusiveNames
 
 	el.Attr = filteredAttrs
 
-	newDeclared := declared.Copy()
+	declared = declared.Copy()
 
 	// Declare all visibly utilized prefixes that are in-scope but haven't
 	// been declared in the canonicalized form yet. These might have been
@@ -68,8 +68,12 @@ func transformExcC14n(ctx, declared NSContext, el *etree.Element, inclusiveNames
 	// have been declared on an ancestor (before canonicalization) which
 	// didn't visibly utilize and thus had them removed.
 	for prefix := range visiblyUtilizedPrefixes {
-		if _, ok := newDeclared.prefixes[prefix]; ok {
-			continue
+		// Skip redundant declarations - they have to already have the same
+		// value.
+		if declaredNamespace, ok := declared.prefixes[prefix]; ok {
+			if value, ok := scope.prefixes[prefix]; ok && declaredNamespace == value {
+				continue
+			}
 		}
 
 		namespace, err := scope.LookupPrefix(prefix)
@@ -77,14 +81,14 @@ func transformExcC14n(ctx, declared NSContext, el *etree.Element, inclusiveNames
 			return err
 		}
 
-		el.Attr = append(el.Attr, newDeclared.declare(prefix, namespace))
+		el.Attr = append(el.Attr, declared.declare(prefix, namespace))
 	}
 
 	sort.Sort(SortedAttrs(el.Attr))
 
 	// Transform child elements
 	for _, child := range el.ChildElements() {
-		err := transformExcC14n(scope, newDeclared, child, inclusiveNamespaces)
+		err := transformExcC14n(scope, declared, child, inclusiveNamespaces)
 		if err != nil {
 			return err
 		}
