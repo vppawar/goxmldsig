@@ -57,3 +57,10 @@ func TestExcC14nWithPrefixList(t *testing.T) {
 	canonicalizer := MakeC14N10ExclusiveCanonicalizerWithPrefixList("xs")
 	runCanonicalizationTest(t, canonicalizer, input, expected)
 }
+
+func TestExcC14nRedeclareDefaultNamespace(t *testing.T) {
+	input := `<Foo xmlns="urn:foo"><Bar xmlns="uri:bar"></Bar></Foo>`
+	expected := `<Foo xmlns="urn:foo"><Bar xmlns="uri:bar"></Bar></Foo>`
+	canonicalizer := MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
+	runCanonicalizationTest(t, canonicalizer, input, expected)
+}
