@@ -47,12 +47,37 @@ type NSContext struct {
 	prefixes map[string]string
 }
 
-func (ctx NSContext) SubContext(el *etree.Element) (NSContext, error) {
-	// The subcontext should inherit existing declared prefixes
+func (ctx NSContext) Copy() NSContext {
 	prefixes := make(map[string]string, len(ctx.prefixes)+4)
 	for k, v := range ctx.prefixes {
 		prefixes[k] = v
 	}
+
+	return NSContext{prefixes: prefixes}
+}
+
+func (ctx NSContext) declare(prefix, namespace string) etree.Attr {
+	ctx.prefixes[prefix] = namespace
+
+	switch prefix {
+	case defaultPrefix:
+		return etree.Attr{
+			Key:   xmlnsPrefix,
+			Value: namespace,
+		}
+
+	default:
+		return etree.Attr{
+			Space: xmlnsPrefix,
+			Key:   prefix,
+			Value: namespace,
+		}
+	}
+}
+
+func (ctx NSContext) SubContext(el *etree.Element) (NSContext, error) {
+	// The subcontext should inherit existing declared prefixes
+	newCtx := ctx.Copy()
 
 	// Merge new namespace declarations on top of existing ones.
 	for _, attr := range el.Attr {
@@ -69,7 +94,7 @@ func (ctx NSContext) SubContext(el *etree.Element) (NSContext, error) {
 				return ctx, ErrReservedNamespace
 			}
 
-			prefixes[attr.Key] = attr.Value
+			newCtx.declare(attr.Key, attr.Value)
 		} else if attr.Space == defaultPrefix && attr.Key == xmlnsPrefix {
 			// This attribute is a default namespace declaration
 
@@ -78,11 +103,11 @@ func (ctx NSContext) SubContext(el *etree.Element) (NSContext, error) {
 				return ctx, ErrInvalidDefaultNamespace
 			}
 
-			prefixes[defaultPrefix] = attr.Value
+			newCtx.declare(defaultPrefix, attr.Value)
 		}
 	}
 
-	return NSContext{prefixes: prefixes}, nil
+	return newCtx, nil
 }
 
 // Prefixes returns a copy of this context's prefix map.

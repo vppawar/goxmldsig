@@ -288,8 +288,16 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 
 				switch AlgorithmID(c14NAlgorithm) {
 				case CanonicalXML10ExclusiveAlgorithmId:
-					canonicalSignedInfo = excCanonicalPrep(
-						detachedSignedInfo, map[string]c14nSpace{}, map[string]struct{}{})
+					err := etreeutils.TransformExcC14n(detachedSignedInfo, "")
+					if err != nil {
+						return err
+					}
+
+					// NOTE: TransformExcC14n transforms the element in-place,
+					// while canonicalPrep isn't meant to. Once we standardize
+					// this behavior we can drop this, as well as the adding and
+					// removing of elements below.
+					canonicalSignedInfo = detachedSignedInfo
 
 				case CanonicalXML11AlgorithmId:
 					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
