@@ -19,14 +19,7 @@ const (
 	xmldocC14N11Canonicalized          = `<Foo xmlns="urn:foo" xmlns:bar="urn:bar" ID="id1619705532971228558789260"><bar:Baz></bar:Baz></Foo>`
 )
 
-func runCanonicalizationTest(t *testing.T, useC14N10ExclusiveCanonicalizer bool, xmlstr string, canonicalXmlstr string) {
-	var canonicalizer Canonicalizer
-	if useC14N10ExclusiveCanonicalizer {
-		canonicalizer = MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
-	} else {
-		canonicalizer = MakeC14N11Canonicalizer()
-	}
-
+func runCanonicalizationTest(t *testing.T, canonicalizer Canonicalizer, xmlstr string, canonicalXmlstr string) {
 	raw := etree.NewDocument()
 	err := raw.ReadFromString(xmlstr)
 	require.NoError(t, err)
@@ -37,17 +30,30 @@ func runCanonicalizationTest(t *testing.T, useC14N10ExclusiveCanonicalizer bool,
 }
 
 func TestExcC14N10(t *testing.T) {
-	runCanonicalizationTest(t, true, assertion, assertionC14ned)
+	runCanonicalizationTest(t, MakeC14N10ExclusiveCanonicalizerWithPrefixList(""), assertion, assertionC14ned)
 }
 
 func TestC14N11(t *testing.T) {
-	runCanonicalizationTest(t, false, assertion, c14n11)
+	runCanonicalizationTest(t, MakeC14N11Canonicalizer(), assertion, c14n11)
 }
 
 func TestXmldocC14N10Exclusive(t *testing.T) {
-	runCanonicalizationTest(t, true, xmldoc, xmldocC14N10ExclusiveCanonicalized)
+	runCanonicalizationTest(t, MakeC14N10ExclusiveCanonicalizerWithPrefixList(""), xmldoc, xmldocC14N10ExclusiveCanonicalized)
 }
 
 func TestXmldocC14N11(t *testing.T) {
-	runCanonicalizationTest(t, false, xmldoc, xmldocC14N11Canonicalized)
+	runCanonicalizationTest(t, MakeC14N11Canonicalizer(), xmldoc, xmldocC14N11Canonicalized)
+}
+
+func TestExcC14nDefaultNamespace(t *testing.T) {
+	input := `<foo:Foo xmlns="urn:baz" xmlns:foo="urn:foo"><foo:Bar></foo:Bar></foo:Foo>`
+	expected := `<foo:Foo xmlns:foo="urn:foo"><foo:Bar></foo:Bar></foo:Foo>`
+	runCanonicalizationTest(t, MakeC14N10ExclusiveCanonicalizerWithPrefixList(""), input, expected)
+}
+
+func TestExcC14nWithPrefixList(t *testing.T) {
+	input := `<foo:Foo xmlns:foo="urn:foo" xmlns:xs="http://www.w3.org/2001/XMLSchema"><foo:Bar xmlns:xs="http://www.w3.org/2001/XMLSchema"></foo:Bar></foo:Foo>`
+	expected := `<foo:Foo xmlns:foo="urn:foo" xmlns:xs="http://www.w3.org/2001/XMLSchema"><foo:Bar></foo:Bar></foo:Foo>`
+	canonicalizer := MakeC14N10ExclusiveCanonicalizerWithPrefixList("xs")
+	runCanonicalizationTest(t, canonicalizer, input, expected)
 }
