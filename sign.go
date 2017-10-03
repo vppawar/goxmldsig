@@ -224,7 +224,8 @@ func (ctx *SigningContext) GetDigestAlgorithmIdentifier() string {
 	return ""
 }
 
-// Useful for signing query string of HTTP-Redirect when making a signed request.
+// Useful for signing query string (including DEFLATED AuthnRequest) when
+// using HTTP-Redirect to make a signed request.
 // See 3.4.4.1 DEFLATE Encoding of https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
 func (ctx *SigningContext) SignString(content string) ([]byte, error) {
 	hash := ctx.Hash.New()
