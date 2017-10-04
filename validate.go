@@ -116,6 +116,12 @@ func (ctx *ValidationContext) transform(
 		case CanonicalXML11AlgorithmId:
 			canonicalizer = MakeC14N11Canonicalizer()
 
+		case CanonicalXML10RecAlgorithmId:
+			canonicalizer = MakeC14N10RecCanonicalizer()
+
+		case CanonicalXML10CommentAlgorithmId:
+			canonicalizer = MakeC14N10CommentCanonicalizer()
+
 		default:
 			return nil, nil, errors.New("Unknown Transform Algorithm: " + algo)
 		}
@@ -301,6 +307,12 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 					canonicalSignedInfo = detachedSignedInfo
 
 				case CanonicalXML11AlgorithmId:
+					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
+
+				case CanonicalXML10RecAlgorithmId:
+					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
+
+				case CanonicalXML10CommentAlgorithmId:
 					canonicalSignedInfo = canonicalPrep(detachedSignedInfo, map[string]struct{}{})
 
 				default:
