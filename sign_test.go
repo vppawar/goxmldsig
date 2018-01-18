@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/beevik/etree"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +17,7 @@ func TestSign(t *testing.T) {
 		Space: "samlp",
 		Tag:   "AuthnRequest",
 	}
-	id := "_" + uuid.NewV4().String()
+	id := "_97e34c50-65ec-4132-8b39-02933960a96a"
 	authnRequest.CreateAttr("ID", id)
 	hash := crypto.SHA256.New()
 	canonicalized, err := ctx.Canonicalizer.Canonicalize(authnRequest)
@@ -127,7 +126,7 @@ func TestSignNonDefaultID(t *testing.T) {
 		Tag:   "Bar",
 	}
 
-	id := "_" + uuid.NewV4().String()
+	id := "_97e34c50-65ec-4132-8b39-02933960a96b"
 
 	signable.CreateAttr("OtherID", id)
 	signed, err := ctx.SignEnveloped(signable)
