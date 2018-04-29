@@ -266,7 +266,12 @@ func NSFindIterate(el *etree.Element, namespace, tag string, handle NSIterHandle
 // returned by NSFindIterate.
 func NSFindIterateCtx(ctx NSContext, el *etree.Element, namespace, tag string, handle NSIterHandler) error {
 	err := NSTraverse(ctx, el, func(ctx NSContext, el *etree.Element) error {
-		currentNS, err := ctx.LookupPrefix(el.Space)
+		_ctx, err := ctx.SubContext(el)
+		if err != nil {
+			return err
+		}
+
+		currentNS, err := _ctx.LookupPrefix(el.Space)
 		if err != nil {
 			return err
 		}
