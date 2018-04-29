@@ -288,7 +288,11 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 					return err
 				}
 
-				c14NMethod := detachedSignedInfo.FindElement(childPath(detachedSignedInfo.Space, CanonicalizationMethodTag))
+				c14NMethod, err := etreeutils.NSFindOneChildCtx(ctx, detachedSignedInfo, Namespace, CanonicalizationMethodTag)
+				if err != nil {
+					return err
+				}
+
 				if c14NMethod == nil {
 					return errors.New("missing CanonicalizationMethod on Signature")
 				}
