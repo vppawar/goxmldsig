@@ -276,13 +276,8 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 	err := etreeutils.NSFindIterate(el, Namespace, SignatureTag, func(ctx etreeutils.NSContext, el *etree.Element) error {
 
 		found := false
-		err := etreeutils.NSFindIterateCtx(ctx, el, Namespace, SignedInfoTag,
+		err := etreeutils.NSFindChildrenIterateCtx(ctx, el, Namespace, SignedInfoTag,
 			func(ctx etreeutils.NSContext, signedInfo *etree.Element) error {
-				// Ignore any SignedInfo that isn't an immediate descendent of Signature.
-				if signedInfo.Parent() != el {
-					return nil
-				}
-
 				detachedSignedInfo, err := etreeutils.NSDetatch(ctx, signedInfo)
 				if err != nil {
 					return err
