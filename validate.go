@@ -157,7 +157,11 @@ func (ctx *ValidationContext) digest(el *etree.Element, digestAlgorithmId string
 func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicalizer Canonicalizer, signatureMethodId string, cert *x509.Certificate, decodedSignature []byte) error {
 	signatureElement := sig.UnderlyingElement()
 
-	signedInfo := signatureElement.FindElement(childPath(signatureElement.Space, SignedInfoTag))
+	signedInfo, err := etreeutils.NSFindOneChild(signatureElement, Namespace, SignedInfoTag)
+	if err != nil {
+		return err
+	}
+
 	if signedInfo == nil {
 		return errors.New("Missing SignedInfo")
 	}
