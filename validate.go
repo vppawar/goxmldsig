@@ -26,7 +26,7 @@ var (
 type ValidationContext struct {
 	CertificateStore X509CertificateStore
 	IdAttribute      string
-	Clock            *Clock
+	clock            Clock
 }
 
 func NewDefaultValidationContext(certificateStore X509CertificateStore) *ValidationContext {
@@ -401,7 +401,10 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 }
 
 func (ctx *ValidationContext) verifyCertificate(sig *types.Signature) (*x509.Certificate, error) {
-	now := ctx.Clock.Now()
+	if ctx.clock == nil {
+		ctx.clock = &realClock{}
+	}
+	now := ctx.clock.Now()
 
 	roots, err := ctx.CertificateStore.Certificates()
 	if err != nil {
