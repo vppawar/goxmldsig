@@ -4,9 +4,9 @@ import (
 	"time"
 )
 
-// Clock provides an interface that packages can use instead of directly
+// clock provides an interface that packages can use instead of directly
 // using the time module, so that chronology-related behavior can be tested
-type Clock interface {
+type clock interface {
 	Now() time.Time
 }
 
